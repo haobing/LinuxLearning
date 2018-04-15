@@ -1,2 +1,1 @@
-# MyAttention
-something need to attention
+注意函数fread，fwrite的使用
