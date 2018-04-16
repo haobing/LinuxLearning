@@ -1,1 +1,1 @@
-注意函数fread，fwrite的使用
+注意函数fread，fwrite,read,write的使用
