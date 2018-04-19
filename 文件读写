@@ -1,0 +1,32 @@
+注意read,write ,open,fread,fwrite,fopen,fgets,fputs,sprintf,fprintf
+
+
+
+#include<sys/types.h>
+#include<string.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<stdio.h>
+int main()
+{
+char buf[20]="ABCDEFG";
+char bu[20]="abcdefg";
+char me[200];
+int fd;
+FILE *fp;
+if(( fd=open("./hao",O_RDWR|O_CREAT))==-1)
+printf("open error\n");
+
+if(write(fd,buf,strlen(buf))!=7)
+printf("write 1 error\n");
+
+if(lseek(fd,20,SEEK_CUR)==-1)
+printf("lseek error\n");
+if(write(fd,bu,strlen(bu))!=7)
+printf("write 2 error\n");
+close(fd);
+fp=fopen("./hao","r");
+fgets(me,200,fp);
+fgets(me,200,fp);
+printf("the:%s\n",me);
+}
