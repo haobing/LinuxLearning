@@ -1,0 +1,96 @@
+服务器：
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#define PORT 8888
+#define BUFFER_SIZE 1024
+
+int main()
+{
+	int sockfd1,sockfd2;
+	struct sockaddr_in server,client;
+	int len;
+	len=sizeof(server);
+	char buf[BUFFER_SIZE];
+	char message[BUFFER_SIZE];
+	
+	sockfd1=socket(AF_INET,SOCK_DGRAM,0);
+	
+	bzero(&server,sizeof(server));
+	server.sin_family=AF_INET;
+	server.sin_port=htons(PORT);
+	server.sin_addr.s_addr=htonl(INADDR_ANY);
+	
+	bind(sockfd1,(struct sockaddr*)&server,sizeof(server));
+	
+	while(1){
+		memset(buf,0,sizeof(buf));
+		recvfrom(sockfd1,buf,sizeof(buf),0,(struct sockaddr*)&client,&len);
+		if(fork()==0)
+			break;
+			printf("the next\n");
+		}
+		sockfd2=socket(AF_INET,SOCK_DGRAM,0);
+		printf("the recieve is:%s\n",buf);
+		memset(message,0,sizeof(buf));
+		printf("plase input some words\n");
+		fgets(message,sizeof(buf),stdin);
+		sendto(sockfd2,message,strlen(buf),0,(struct sockaddr*)&client,sizeof(client));
+		while(1){
+			memset(message,0,sizeof(message));
+			recvfrom(sockfd2,message,sizeof(message),0,(struct sockaddr*)&client,&len);
+			printf("the last i reciev is:%s\n",message);
+			memset(message,0,sizeof(message));
+			sprintf(message,"i'm the server\n");
+			sendto(sockfd2,message,strlen(message),0,(struct sockaddr*)&client,len);
+		}
+	}
+
+客户端：
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#define PORT 8888
+#define SIZE 1024
+
+int main()
+{
+	int sockfd,len;
+	struct sockaddr_in server;
+	len=sizeof(server);
+	char buf[SIZE];
+	
+	sockfd=socket(AF_INET,SOCK_DGRAM,0);
+	
+	bzero(&server,sizeof(server));
+	server.sin_family=AF_INET;
+	server.sin_port=htons(PORT);
+	server.sin_addr.s_addr=htonl(INADDR_ANY);
+	
+	while(1){
+		memset(buf,0,sizeof(buf));
+		printf("please input some words\n");
+		fgets(buf,sizeof(buf),stdin);
+		sendto(sockfd,buf,strlen(buf),0,(struct sockaddr*)&server,len);
+		memset(buf,0,sizeof(buf));
+		recvfrom(sockfd,buf,sizeof(buf),0,(struct sockaddr*)&server,&len);
+		printf("i recievd is:%s\n",buf);
+	}
+}
+		
