@@ -1,0 +1,86 @@
+#include <stdlib.h>  
+#include <stdio.h>  
+#include <string.h>  
+#include <errno.h>  
+#include <unistd.h>   
+#include <sys/types.h>  
+#include <sys/ipc.h>  
+#include <sys/msg.h> 
+
+#define PATH "/mnt/hgfs/Linux/practice/text"
+#define SIZE 1024
+
+struct my_message{
+	long int my_type;
+char buf[SIZE];
+};
+
+int main()
+{
+	key_t key;
+	struct my_message message;
+	int msgid;
+	char buf[SIZE];
+	key=ftok(PATH,1);
+	printf("key=%d\n",key);
+	msgid=msgget(key,0666|IPC_CREAT);
+	if(msgid==-1)
+		printf("msgget error\n");
+	while(1){
+	msgrcv(msgid,(void *)&message,SIZE,10,0);//ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg)
+                                           //msgtyp等于0 则返回队列的最早的一个消息。
+                                            //msgtyp大于0，则返回其类型为mtype的第一个消息。
+                                             //msgtyp小于0,则返回其类型小于或等于mtype参数的绝对值的最小的一个消息。
+	memcpy(buf,message.buf,SIZE);
+	fputs(buf,stdout);
+	if(strncmp(buf,"quit",4)==0)
+		break;
+}
+
+msgctl(msgid,IPC_RMID,0);
+return 0;
+}
+
+
+#include <stdlib.h>  
+#include <stdio.h>  
+#include <string.h>  
+#include <errno.h>  
+#include <unistd.h>   
+#include <sys/types.h>  
+#include <sys/ipc.h>  
+#include <sys/msg.h>
+
+#define PATH "/mnt/hgfs/Linux/practice/text"
+#define SIZE 1024
+
+struct my_msg{
+	long int mytype;
+	char buf[SIZE];
+};
+
+int main()
+{
+	int msgid;
+	key_t key;
+	struct my_msg message;
+	key=ftok(PATH,1);
+	printf("key=%d\n",key);
+	
+	msgid=msgget(key,0666|IPC_CREAT);
+	
+	message.mytype=10;
+	while(1){
+	fputs("please input some words\n",stdout);
+	fgets(message.buf,SIZE,stdin);
+	
+	msgsnd(msgid,(void *)&message,SIZE,0);
+	
+	if(strncmp(message.buf,"quit",3)==0)
+		break;
+	}
+	msgctl(msgid,IPC_RMID,0);
+	return 0;
+}
+	
+
