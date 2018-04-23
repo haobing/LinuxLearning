@@ -1,4 +1,4 @@
-注意read,write ,open,fread,fwrite,fopen,fgets,fputs,sprintf,fprintf
+注意read,write ,open,fread,fwrite,fopen,fgets,fputs,sprintf,fprintf,注意每次读写一行，每次读写整个结构的方法区别
 
 
 
@@ -29,4 +29,34 @@ fp=fopen("./hao","r");
 fgets(me,200,fp);
 fgets(me,200,fp);
 printf("the:%s\n",me);
+}
+
+
+
+#include<stdio.h>
+#include<string.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+int main()
+{
+	FILE *fp;
+	int fd;
+	char buf[1024];
+	int n;
+	char *me="ABCDEFG";
+	char *me1="abcdefg";
+	fd=open("./text",O_RDWR|O_CREAT);
+	n=write(fd,me,strlen(me));
+	if(n<=0)
+	printf("write error\n");
+	lseek(fd,20,SEEK_CUR);
+	n=write(fd,me1,strlen(me1));
+	if(n<=0)
+	printf("write2 error\n");
+	close(fd);
+	fp=fopen("./text","r+");
+	n=fread(buf,1,100,fp);
+	printf("the n=%d\n",n);
+	fwrite(buf,1,100,stdout);
+	fclose(fp);
 }
