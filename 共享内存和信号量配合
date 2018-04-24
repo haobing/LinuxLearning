@@ -23,7 +23,7 @@ int main()
 	shmid=shmget(shmkey,1024,0666|IPC_CREAT);
 	
 	char *p=(char *)shmat(shmid,NULL,0);
-	union semun{
+	/*union semun{
 		int val;
 		struct semid_ds *buf;
 		short *array;
@@ -31,6 +31,8 @@ int main()
 	
 	sem_u.val=1;
 	semctl(semid,0,SETVAL,sem_u);
+	*/
+	semctl(semid,0,SETVAL,1);
 	
 	void sem_p(void)
 	{
