@@ -1,0 +1,59 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<pthread.h>
+
+pthread_rwlock_t rwlock=PTHREAD_RWLOCK_INITIALIZER;
+
+int global_num=10;
+
+void err_exit(const char *err_msg)
+{
+	printf("error:%s\n",err_msg);
+	exit(1);
+}
+
+void *thread_read_lock(void *arg)
+{
+	char *p=(char *)arg;
+	while(1){
+	pthread_rwlock_rdlock(&rwlock);
+	
+	printf("thre pthread %s into the midlle,global_num=%d\n",p,global_num);
+	sleep(1);
+	
+	printf("the pthread %s exit the middle\n",p);
+	pthread_rwlock_unlock(&rwlock);
+	sleep(1);
+}
+}
+
+void *thread_write_lock(void *arg)
+{
+	char *p=(char *)arg;
+	while(1){
+		pthread_rwlock_wrlock(&rwlock);
+		global_num++;
+		printf("the pthread %s into the middle,global_num=%d\n",p,global_num);
+		sleep(1);
+		printf("the pthread %s exit the middle\n",p);
+		pthread_rwlock_unlock(&rwlock);
+		sleep(1);
+	}
+}
+
+int main()
+{
+	pthread_t read1,read2,write1,write2;
+	
+	pthread_create(&read1,NULL,thread_read_lock,"read1");
+	
+	pthread_create(&read2,NULL,thread_read_lock,"read2");
+	
+	pthread_create(&write1,NULL,thread_write_lock,"write1");
+	
+	pthread_create(&write2,NULL,thread_write_lock,"write2");
+	
+	pthread_join(read1,NULL);
+}
