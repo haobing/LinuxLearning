@@ -1,0 +1,150 @@
+ 第一种形式：
+ edit : main.o kbd.o command.o display.o /
+           insert.o search.o files.o utils.o
+            cc -o edit main.o kbd.o command.o display.o /
+                       insert.o search.o files.o utils.o
+
+    main.o : main.c defs.h
+            cc -c main.c
+    kbd.o : kbd.c defs.h command.h
+            cc -c kbd.c
+    command.o : command.c defs.h command.h
+            cc -c command.c
+    display.o : display.c defs.h buffer.h
+            cc -c display.c
+    insert.o : insert.c defs.h buffer.h
+            cc -c insert.c
+    search.o : search.c defs.h buffer.h
+            cc -c search.c
+    files.o : files.c defs.h buffer.h command.h
+            cc -c files.c
+    utils.o : utils.c defs.h
+            cc -c utils.c
+    clean :
+            rm edit main.o kbd.o command.o display.o /
+               insert.o search.o files.o utils.o
+//反斜杠(/)是换行符的意思
+
+
+第二种形式：
+objects= main.o kbd.o command.o display.o insert.osearch.o files.o utils.o 
+
+   edit: $(objects)
+
+           cc-o edit $(objects)
+
+   main.o: main.c defs.h
+
+           cc-c main.c
+
+   kbd.o: kbd.c defs.h command.h
+
+           cc-c kbd.c
+
+   command.o: command.c defs.h command.h
+
+           cc-c command.c
+
+   display.o: display.c defs.h buffer.h
+
+           cc-c display.c
+
+   insert.o: insert.c defs.h buffer.h
+
+           cc-c insert.c
+
+   search.o: search.c defs.h buffer.h
+
+           cc-c search.c
+
+   files.o: files.c defs.h buffer.h command.h
+
+           cc-c files.c
+
+   utils.o: utils.c defs.h
+
+           cc-c utils.c
+
+   clean:
+
+           rm edit $(objects)
+makefile中以“$(objects)”的方式来使用变量objects
+
+
+第三种形式：
+
+objects= main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+
+  edit :$(objects)
+
+           cc-o edit $(objects)
+
+   main.o: defs.h
+
+   kbd.o: defs.h command.h
+
+   command.o: defs.h command.h
+
+   display.o: defs.h buffer.h
+
+   insert.o: defs.h buffer.h
+
+   search.o: defs.h buffer.h
+
+   files.o: defs.h buffer.h command.h
+
+   utils.o: defs.h
+
+    .PHONY: clean
+
+   clean:
+
+           rm edit $(objects)
+ make可以自动推导文件和依赖关系
+ 
+ 
+ 第四种形式：
+ objects= main.o kbd.o command.o display.o  insert.o search.o files.o utils.o
+
+    edit: $(objects)
+
+           cc-o edit $(objects)
+
+    $(objects): defs.h
+
+   kbd.ocommand.o files.o : command.h
+
+   display.oinsert.o search.o files.o : buffer.h
+
+    .PHONY : clean  //“.PHONY”表示，clean是个伪目标文件
+
+   clean:
+
+           rm edit $(objects)
+           
+           
+           
+第五种形式：
+
+ objects = foo.o bar.o
+
+    all: $(objects)
+
+    $(objects): %.o:%.c
+
+           $(CC)-c $(CFLAGS) $< -o $@
+
+ 上面的例子中，指明了我们的目标从$object中获取，
+ “%.o”表明要所有以“.o”结尾的目标，也就是“foo.o bar.o”，
+ 也就是变量$object集合的模式，而依赖模式“%.c”则取模式“%.o”的“%”，
+ 也就是“foobar”，并为其加下“.c”的后缀，于是，我们的依赖目标就是“foo.cbar.c”。
+ 而命令中的“$<”和“$@”则是自动化变量，“$<”表示所有的依赖目标集（也就是“foo.c bar.c”），
+ “$@”表示目标集（也褪恰癴oo.o bar.o”）。于是，上面的规则展开后等价于下面的规则：
+
+   foo.o : foo.c
+
+           $(CC)-c $(CFLAGS) foo.c -o foo.o
+
+   bar.o : bar.c
+
+           $(CC)-c $(CFLAGS) bar.c -o bar.o
