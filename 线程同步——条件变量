@@ -1,0 +1,89 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<pthread.h>
+
+pthread_mutex_t mutex;
+pthread_mutexattr_t mutex_attr;
+
+int money;
+
+pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+
+void err_exit(const char *err_msg)
+{
+	printf("error:%s\n",err_msg);
+	exit(1);
+}
+
+void *thread_fun(void *arg)
+{
+	while(1){
+		pthread_mutex_lock(&mutex);
+		while(money>0){
+			printf(" the child pthread waiting for the money turn to 0\n");
+			pthread_cond_wait(&cond,&mutex);
+		}
+		printf("the child pthread goto the middle to look for the money\n");
+		
+		if(money==0)
+			{
+				money+=200;
+				printf("the child pthread mongy=%d\n",money);
+			}
+			pthread_mutex_unlock(&mutex);
+			
+			sleep(1);
+		}
+		
+	return NULL;
+}
+
+int main()
+{
+	pthread_t tid;
+	
+	if(pthread_mutexattr_init(&mutex_attr)==-1)
+		err_exit("pthread_mutexattr_init()");
+	if(pthread_mutexattr_settype(&mutex_attr,PTHREAD_MUTEX_NORMAL)==-1)
+		err_exit("pthread_mutex_settype()");
+	
+	if(pthread_mutex_init(&mutex,&mutex_attr)==-1)
+		err_exit("pthread_mutex_init()");
+	
+	if(pthread_create(&tid,NULL,thread_fun,NULL)==-1)
+		err_exit("pthread_create");
+	
+	money=1000;
+	
+	while(1){
+		pthread_mutex_lock(&mutex);
+		if(money>0)
+			{
+				money-=100;
+				printf("the main pthread:money=%d\n",money);
+				
+			}
+			pthread_mutex_unlock(&mutex);
+			
+			if(money==0)
+				{
+					printf("call for the child pthread\n");
+					pthread_cond_signal(&cond);
+				}
+				sleep(1);
+			}
+			return 0;
+}
+注意：
+   一、等待函数里面要传入一个互斥量，这个互斥量会在这个函数调用时会发生如下变化：
+函数刚刚被调用时，会把这个互斥量解锁，然后让调用线程阻塞，解锁后其他线程才有机会获得这个锁。
+当某个线程调用通知函数时，这个函数收到通知后，又把互斥量加锁，
+然后继续向下操作临界区。可见这个设计是非常合理的
+    二、条件变量的等待函数用while循环包围，本程序的第24行。
+原因：如果有多个线程都在等待这个条件变量关联的互斥量，当条件变量收到通知，
+它下一步就是要锁住这个互斥量，但在这个极小的时间差里面，其他线程抢先获取
+了这互斥量并进入临界区把某个状态改变了。此时这个条件变量应该继续判断别人
+刚刚抢先修改的状态，即继续执行while的判断。还有一个原因时防止虚假通知，
+收到虚假通知后，只要while里面的条件为真，就继续休眠！！！
