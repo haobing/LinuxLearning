@@ -43,7 +43,7 @@ int main()
 		}
 		else if(pid>0){
 			sleep(1);
-		write(fd,buf,20);//注意读写溢出的情况
+		write(fd,buf,20);//注意读写溢出的情况，即20>strlen(buf)
 			printf("the father write ok\n");
 		}
 		write(fd,"wo shi shui\n",20);
