@@ -1,5 +1,24 @@
 2018/5/3：sscanf函数从一个字符串中读进与指定格式相符的数据int sscanf(const char *buffer,const char *format,[argument ]...);
 
+
+2018/5/4:strtok函数分割字符串char *strtok(char s[], const char *delim);
+
+
+2018/5/4:strchr函数从字符串str中寻找字符character第一次出现的位置char *strchr(char *str,char character)
+例子sscanf:
+#include<stdio.h>
+#include<string.h>
+int main()
+{
+char p[20]="hell,wo,hao,bing";
+char *a;
+a=strtok(p,",");
+while(a){
+printf("a=%s\n",a);
+a=strtok(NULL,",");
+}
+}
+例子：strtok
 #include<stdio.h>
 #include<string.h>
 int main()
@@ -9,7 +28,3 @@ int a,b,c,d;
 sscanf(p,"%d.%d.%d.%d",&a,&b,&c,&d);
 printf("a=%d,b=%d,c=%d,d=%d\n",a,b,c,d);
 }
-
-
-2018/5/4:strtok函数分割字符串char *strtok(char s[], const char *delim);
-2018/5/4:strchr函数从字符串str中寻找字符character第一次出现的位置char *strchr(char *str,char character)
