@@ -1,3 +1,4 @@
 2018/5/3：sscanf函数从一个字符串中读进与指定格式相符的数据int sscanf(const char *buffer,const char *format,[argument ]...);
 
 2018/5/4:strtok函数分割字符串char *strtok(char s[], const char *delim);
+2018/5/4:strchr函数从字符串str中寻找字符character第一次出现的位置char *strchr(char *str,char character)
