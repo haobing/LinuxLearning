@@ -91,3 +91,142 @@ int main()
 		}
 	}
 }
+
+聊天室服务器：
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <sys/epoll.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <strings.h>
+#include <string.h>
+
+#define PORT 8888
+#define SIZE 1024
+#define SERVER_MESSAGE "welcome to the char rome!ur chat ID is:CLIENT #%d"
+#define CLIENT_MESSAGE "Client ID %d say >>%s"
+
+
+int sendbroadmsg(int);
+
+struct str_clients{
+	int clientfd;
+	int flag;
+};
+
+struct str_clients clients[SIZE];
+int count;
+int epfd;
+
+int main()
+{
+	int sockfd,con,sock_fd;
+	struct sockaddr_in server,client;
+	int i,n,len;
+	int fds;
+	char words[SIZE];
+	struct epoll_event ev,events[SIZE];
+	len=sizeof(client);
+	count=0;
+	
+	sockfd=socket(AF_INET,SOCK_STREAM,0);
+	
+	bzero(&server,sizeof(server));
+	server.sin_family=AF_INET;
+	server.sin_port=htons(PORT);
+	server.sin_addr.s_addr=htonl(INADDR_ANY);
+	
+	bind(sockfd,(struct sockaddr*)&server,sizeof(server));
+	
+	listen(sockfd,SIZE);
+	
+	epfd=epoll_create(SIZE);
+	ev.data.fd=sockfd;
+	ev.events=EPOLLIN;
+	epoll_ctl(epfd,EPOLL_CTL_ADD,sockfd,&ev);
+	
+	fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFD,0)|O_NONBLOCK);
+	
+	for(i=0;i<SIZE;i++){
+		clients[i].clientfd=-1;
+		clients[i].flag=0;
+	}
+	
+	while(1){
+		
+		fds=epoll_wait(epfd,events,SIZE,-1);
+		printf("--------the fds=%d------------\n",fds);
+		
+		for(i=0;i<fds;i++){
+			sock_fd=events[i].data.fd;
+			//如果是新加入的连接
+			if(events[i].data.fd==sockfd){
+				con=accept(sockfd,(struct sockaddr*)&client,&len);
+				printf("client connection from %s:%d(IP:port),client fd=%d\n",inet_ntoa(client.sin_addr),ntohs(client.sin_port),con);
+				ev.data.fd=con;
+				ev.events=EPOLLIN;
+				epoll_ctl(epfd,EPOLL_CTL_ADD,con,&ev);
+			
+			int j;
+			for(j=0;clients[j].flag!=0&&j<SIZE;j++);
+			if(j<SIZE){
+				clients[j].clientfd=con;
+				clients[j].flag=1;
+				count++;
+				printf("Add new clientfd=%d to epoll\n",con);
+				printf("now there are %d clients in the chat room\n",count);
+			}
+			else
+				printf("too many clients\n");
+			char message[SIZE];
+			memset(message,0,SIZE);
+			sprintf(message,SERVER_MESSAGE,con);
+			send(con,message,strlen(message),0);
+		}
+		//如果不是新加入的连接
+		else{
+			sendbroadmsg(sock_fd);
+		}
+	}
+}
+close(epfd);
+}
+		  		
+int sendbroadmsg(int sockfd)
+{
+	int i,j;
+	char buf[SIZE],message[SIZE];
+	memset(buf,0,SIZE);
+	struct epoll_event ev;
+	//接收一个客户端的信息
+	int len=recv(sockfd,buf,SIZE,0);
+	//如果客户端发送信息为0就关闭这个连接
+	if(len==0){
+		
+		close(sockfd);
+		for(i=0;clients[i].clientfd!=sockfd;i++);
+		clients[i].flag=0;
+		printf("the client %d is out\n",clients[i].clientfd);
+		count--;
+		ev.data.fd=clients[i].clientfd;
+		ev.events=EPOLLIN;
+		epoll_ctl(epfd,EPOLL_CTL_DEL,clients[i].clientfd,&ev);
+	}
+	//把一个客户端的信息发送给其它所有的客户端
+	else{
+		memset(message,0,SIZE);
+		sprintf(message,CLIENT_MESSAGE,sockfd,buf);
+		
+		for(i=0;i<count;i++){
+			if(clients[i].clientfd!=sockfd){
+				send(clients[i].clientfd,message,strlen(message),0);
+			}
+		}
+	}
+}
+			  	
+		 
