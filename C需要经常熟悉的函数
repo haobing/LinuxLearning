@@ -1,5 +1,11 @@
 一、sscanf函数从一个字符串中读进与指定格式相符的数据int sscanf(const char *buffer,const char *format,[argument ]...);
 二、strtok函数分割字符串char *strtok(char s[], const char *delim);
+注意：需要注意的是：如果s4是字符串常量，运行这一段代码会报出段错误。
+因为strtok为了处理方便，会更改字符串s4中的一些字符（将分隔符split更改为'\0'），
+而字符串常量是不能更改的，所以会报段错误。
+ 第二个需要注意的点是：strtok处理的过程中会更改字符串s4中的一些字符（将分隔符split更改为'\0'），
+ 可恶的是，它处理完之后还不会给你再改回来。。。。被strtok强奸后的s4已经废了，千万不要再拿来用了。
+
 三、strchr函数从字符串str中寻找字符character第一次出现的位置char *strchr(char *str,char character)
 
 例子sscanf:
