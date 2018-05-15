@@ -10,3 +10,22 @@ memcpy(buf,mes,sizeof(mes));
 float *i=(float*)buf;
 printf("the number=%f\n",*i);
 }
+
+理解各种数据类型之间的转换原理
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+struct a{
+int n;
+char b[20];
+};
+int main()
+{
+struct a message;
+message.n=10;
+strcpy(message.b,"hello world\n");
+char buf[100];
+memcpy(buf,&message,sizeof(message));
+struct a *getmessage=(struct a*)buf;
+printf("the n=%d,b=%s\n",getmessage->n,getmessage->b);
+}
