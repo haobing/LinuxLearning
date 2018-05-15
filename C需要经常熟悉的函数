@@ -7,6 +7,7 @@
  可恶的是，它处理完之后还不会给你再改回来。。。。被strtok强奸后的s4已经废了，千万不要再拿来用了。
 
 三、strchr函数从字符串str中寻找字符character第一次出现的位置char *strchr(char *str,char character)
+四、gettimeofday获取当前精确时间，int gettimeofday(struct timeval*tv, struct timezone *tz);
 
 例子sscanf:
 #include<stdio.h>
