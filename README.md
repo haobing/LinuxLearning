@@ -1,5 +1,5 @@
 一、注意函数fread，fwrite,read,write,fgets fputs gets puts sprintf,snprintf,fgetc fputc getchar putchar等的使用（APUE第五章）；
-    C语言不管带不带参数，函数后面都要加上括号
+    C语言不管带不带参数，函数后面都要加上括号；文件的操作以字节为最小单位
 
 二、accep函数：
 int accept（int sockfd,struct sockaddr *cliaddr,socklen_t *addrlen)，常把它的第一个参数称为监听套接口，把它的返回值称为已连接套接口
