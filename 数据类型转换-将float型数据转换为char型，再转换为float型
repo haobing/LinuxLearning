@@ -1,0 +1,12 @@
+主要用到memcpy内存地址拷贝，可以通过这种方式将各种格式的数据用TCP/IP协议进程传输，不仅限于字符了
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+int main()
+{
+char buf[1024];
+float mes[10]={1.023,2.34325,4.432};
+memcpy(buf,mes,sizeof(mes));
+float *i=(float*)buf;
+printf("the number=%f\n",*i);
+}
