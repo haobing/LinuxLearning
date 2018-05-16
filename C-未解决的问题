@@ -1,0 +1,38 @@
+下面的程序为什么不能按照想法运行，子程序没有调用SIGINT中断函数
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<signal.h>
+
+int alarm_fired=0;
+
+void ouch(int sig)
+{
+alarm_fired=1;
+printf("set the alarm_fired=1,signal=%d\n",sig);
+}
+
+int main()
+{
+pid_t pid;
+pid=fork();
+switch(pid){
+case -1:
+perror("fork error\n");
+case 0:
+sleep(5);
+kill(getppid(),SIGALRM);
+signal(SIGINT,ouch);
+break;
+
+default:
+signal(SIGALRM,ouch);
+break;
+}
+while(!alarm_fired){
+printf("hello world\n");
+sleep(1);
+}
+return 0;
+}
