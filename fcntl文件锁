@@ -1,11 +1,19 @@
-/*文件锁：1、当一个进程终止时，它所建立的锁全部释放，任何时候关闭一个描述符时，
-             则该进程通过这一描述符可以存访的文件上的任何一把锁都被释放
-          2、由fork产生的子程序不继承父进程所设置的锁
-          3、在执行exec之后，新程序可以继承原来执行程序的锁
-
-
-*/
-#include <unistd.h>
+/*文件锁：fork函数调用会创建子进程，子进程的地址空间是在调用fork时父进程地址空间的拷贝。因为子进程地址空间跟父进程一样，
+所以调用fork时，子进程继承了父进程中的所有互斥锁、读写锁和条件变量（包括它们的状态）。
+    但在多线程环境中，调用fork时，子进程中只有一个线程存在，这个线程是调用fork函数的那个线程，其他线程都没有被拷贝。
+    根据上述两点，子进程中的锁可能被不存在的线程所拥有，这样子进程将没法获取或释放这些锁。针对这个问题有一个解决办法，
+    即在调用fork之前，线程先获取进程中所有锁，在调用fork后分别在父子进程中释放这些锁，从而可以重新利用这些资源。
+    因为fork之前，当前线程拥有所有的锁，所以fork之后，当前线程继续存在，子进程可以安全的释放这些锁。
+    当然，在调用fork后，子进程马上调用exec，就无需考虑这些问题了，因为子进程地址空间被完全更换了。
+    函数pthread_atfork专门用来解决这种问题：
+    int pthread_atfork ( void (*prepare)(void), void (*parent)(void), void (*child)(void) );
+    pthread_atfork安装一些在fork调用时的回调函数。prepare函数将在fork创建子进程之前被调用，通常可以用来获取进程中的所有锁；
+    parent在fork创建子进程后返回前在父进程中被调用，可以用来释放父进程中的锁；child在fork创建子进程后fork返回前在子进程中被调用，可以用来释放子进程中的锁。给这三个参数传递NULL，表示不调用该函数。
+    可以调用pthread_atfork多次注册多组回调函数，这时，回调函数调用的顺序规定如下：
+      ①prepare函数调用顺序与它们的注册顺序相反；
+      ②parent和child函数的调用顺序与注册顺序相同。
+     可以看到下面这个父子进程间的文件锁并不起作用。
+     #include <unistd.h>
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,6 +21,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include<sys/wait.h>
+#include<string.h>
 
 int lock_reg(int fd,int cmd,int type)
 {
@@ -21,33 +30,55 @@ int lock_reg(int fd,int cmd,int type)
 	lock.l_start=0;
 	lock.l_whence=SEEK_SET;
 	lock.l_len=0;
-	
 	if(fcntl(fd,cmd,&lock)==-1)
-		printf(" fcntl error\n");
+		printf("fcntl error\n");
 }
+
 int main()
 {
 	pid_t pid;
-	char *buf="wo shi fu qin\n";
+	char *buf1="wo shi fu qin";
+	char *buf2="zhe ge shi haizi";
 	int fd;
+	char buf[1024];
 	unlink("./lock");
 	fd=open("./lock",O_RDWR|O_CREAT);
+	printf("the fd=%d\n",fd);
 	if((pid=fork())<0)
 		printf("fork error\n");
-	else if(pid==0){
-		lock_reg(fd,F_SETLK,F_WRLCK);
-		if(write(fd,"hello,wo shi hai zi\n",25)<=0)
-			sleep(20);
-			write(fd,"hai zi you kaishi xie le\n",30);
-			//printf("the child write error\n");
+	else if(pid==0)
+		{	
+			int n;
+			printf("in the child\n");
+			lock_reg(fd,F_SETLKW,F_WRLCK);
+			
+			n=write(fd,buf2,strlen(buf2));
+			printf("the n=%d\n",n);
+			sleep(2);
+			write(fd,buf2,strlen(buf2));
+			printf("child is over\n");
+			
+			
+			
 		}
 		else if(pid>0){
 			sleep(1);
-		write(fd,buf,20);//注意读写溢出的情况，即20>strlen(buf)
-			printf("the father write ok\n");
+			printf("in the father\n");
+			write(fd,buf1,strlen(buf1));
+			//lseek(fd,0,SEEK_SET);
+			//read(fd,buf,sizeof(buf));
+			//printf("the buf=%s\n",buf);
 		}
-		write(fd,"wo shi shui\n",20);
-}
+}    
+      
+
+
+
+
+
+
+
+
 
 /*父子进程执行程序
 int main()
