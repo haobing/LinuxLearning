@@ -1,4 +1,5 @@
 主要用到memcpy内存地址拷贝，可以通过这种方式将各种格式的数据用TCP/IP协议进程传输，不仅限于字符了
+void *memcpy(void *dest, const void *src, size_t n);
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
