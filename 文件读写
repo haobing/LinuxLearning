@@ -1,5 +1,8 @@
 注意read,write ,open,fread,fwrite,fopen,fgets,fputs,sprintf,fprintf,注意每次读写一行，每次读写整个结构的方法区别
 
+注意char *buf="hao";n=write(fd,buf,20);返回n=20,注意buf长度小于20，从中读取20内存可能会越界，
+因此这种表达本本身有问题，读取的长度len不应该大于buf的长度。
+
 
 
 #include<sys/types.h>
