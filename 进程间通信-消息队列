@@ -42,6 +42,7 @@ int main()
                                            //msgtyp等于0 则返回队列的最早的一个消息。
                                             //msgtyp大于0，则返回其类型为mtype的第一个消息。
                                              //msgtyp小于0,则返回其类型小于或等于mtype参数的绝对值的最小的一个消息。
+					     //msgsz的大小msgrcv函数中应该和msgsnd函数中一致，不然会出现问题
 	memcpy(buf,message.buf,SIZE);
 	fputs(buf,stdout);
 	if(strncmp(buf,"quit",4)==0)
