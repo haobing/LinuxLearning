@@ -12,7 +12,7 @@
     可以调用pthread_atfork多次注册多组回调函数，这时，回调函数调用的顺序规定如下：
       ①prepare函数调用顺序与它们的注册顺序相反；
       ②parent和child函数的调用顺序与注册顺序相同。
-     可以看到下面这个父子进程间的文件锁并不起作用。-------------------------------------------------------------------------------------
+  下面的程序注意把F_SETLKW换成F_SETLK执行时候的情况，一个是阻塞锁，一个是非阻塞锁。
      #include <unistd.h>
 #include <sys/file.h>
 #include <sys/types.h>
@@ -51,25 +51,23 @@ int main()
 			int n;
 			printf("in the child\n");
 			lock_reg(fd,F_SETLKW,F_WRLCK);
-			
 			n=write(fd,buf2,strlen(buf2));
 			printf("the n=%d\n",n);
 			sleep(2);
 			write(fd,buf2,strlen(buf2));
-			printf("child is over\n");
-			
+			printf("will out the child\n");
+			lock_reg(fd,F_SETLKW,F_UNLCK);
 			
 			
 		}
 		else if(pid>0){
 			sleep(1);
+			lock_reg(fd,F_SETLKW,F_WRLCK);
 			printf("in the father\n");
 			write(fd,buf1,strlen(buf1));
-			//lseek(fd,0,SEEK_SET);
-			//read(fd,buf,sizeof(buf));
-			//printf("the buf=%s\n",buf);
+			
 		}
-}    
+}	
       
 
 不同进程间文件锁：--------------------------------------------------------------------------------------------------
