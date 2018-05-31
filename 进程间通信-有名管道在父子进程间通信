@@ -15,7 +15,69 @@ FIFO文件在使用上和普通文件有相似之处，但是也有不同之处�
 Ø  写fifo文件的进程只能以”WRONLY”方式打开fifo
 
 Ø  fifo文件里面的内容被读取后，就消失了。但是普通文件里面的内容读取后还存在。
- 
+有名管道在不同进程间通信-------------------------------------------------------------------------------------------------------
+注意unlink不能乱用，如果一个进程用mkfifo(path,0777)创建了文件，另一个进程用unlink删除了文件之后再调用mkfifo创建就不是同一个管道，
+就不能进行通信；
+注意两个用管道进程通信的进程都会堵塞在open函数处，
+直到两个进程都调用open，open才会返回，即于以只写方式（O_WRONLY）打开的FIFO文件，
+如果open调用是阻塞的（即第二个参数为O_WRONLY），open调用将被阻塞，直到有一个进程以只读方式打开同一个FIFO文件为止；
+如果open调用是非阻塞的（即第二个参数为O_WRONLY | O_NONBLOCK），open总会立即返回，但如果没有其他进程以只读方式打开同一个FIFO文件，
+open调用将返回-1，并且FIFO也不会被打开。
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<errno.h>
+
+
+#define PATH  "/text"
+int main()
+{
+	//unlink(PATH);
+	int res;
+	
+mkfifo("/text",0777);
+
+	char buf[20];
+	printf("start write to youmingguandao\n");
+	int fd=open("/text",O_WRONLY);
+	
+	printf("open fd=%d the error=%s\n",fd,strerror(errno));
+
+		memset(buf,0,sizeof(buf));
+		printf("start input th fd=%d\n",fd);
+		fgets(buf,sizeof(buf),stdin);
+		write(fd,buf,strlen(buf));
+	
+}
+ #include <stdlib.h>  
+#include <stdio.h>  
+#include <string.h>  
+#include <errno.h>  
+#include <unistd.h>   
+#include <sys/types.h>  
+#include <sys/ipc.h>  
+#include <sys/msg.h> 
+ #include <sys/stat.h>
+#include <fcntl.h> 
+
+#define PATH  "/text"
+int main()
+{
+	//unlink(PATH);
+	mkfifo(PATH,0777);
+	char buf[50];
+	printf("start to read\n");
+	int fd=open(PATH,O_RDONLY);
+	memset(buf,0,sizeof(buf));
+	read(fd,buf,sizeof(buf));
+	printf("the buf=%s,fd=%d\n",buf,fd);
+}
+	
+ 有名管道在父子进程间通信----------------------------------------------------------------------------------------------------------------
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
