@@ -43,6 +43,11 @@ int main()
                                             //msgtyp大于0，则返回其类型为mtype的第一个消息。
                                              //msgtyp小于0,则返回其类型小于或等于mtype参数的绝对值的最小的一个消息。
 					     //msgsz的大小msgrcv函数中应该和msgsnd函数中一致，不然会出现问题
+					     *msgflg 0 阻塞式接收消息，没有该类型的消息msgrcv函数一直阻塞等待*/  
+        /*msgflg IPC_NOWAIT 如果没有返回条件的消息调用立即返回，此时错误码为ENOMSG*/  
+        /*msgflg IPC_EXCEPT 与msgtype配合使用返回队列中第一个类型不为msgtype的消息*/  
+        /*msgflg IPC_NOERROR 如果队列中满足条件的消息内容大于所请求的size字节，则把该消息截断，截断部分将被丢弃*/ 
+	
 	memcpy(buf,message.buf,SIZE);
 	fputs(buf,stdout);
 	if(strncmp(buf,"quit",4)==0)
