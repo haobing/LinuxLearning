@@ -1,3 +1,6 @@
+信号量和互斥锁比较相似，都是需要按照约定的规则，对信号或者锁进行判断，处于sem_p 和sem_v之间的代码并不是原子操作。
+因此可以在临界区之前设立锁 或者信号量，每次执行到锁或者信号量的位置的时候就会执行判断，如果信号量不大于0这里就阻塞，如果锁是锁住的状态这里就阻塞，
+可以说锁或者信号量只是编程约定的一些判断规则。记住它们中间的代码并不是原子操作。
 server：
 #include<stdio.h>
 #include<stdlib.h>
@@ -6,71 +9,62 @@ server：
 #include<string.h>
 #include<errno.h>
 #include<sys/sem.h>
+#include<string.h>
 
-#define PATH1 "/mnt/hgfs/share/practice/text1"
-#define PATH2 "/mnt/hgfs/share/practice/text2"
+#define PATH1 "/mnt/shared/practice/text1"
+#define PATH2 "/mnt/shared/practice/text2"
 
+void sem_p(int semid)
+{
+	struct sembuf semp;
+	semp.sem_num=0;
+	semp.sem_op=-1;
+	semp.sem_flg=SEM_UNDO;
+	if(semop(semid,&semp,1)==-1)
+		printf("semop_p error\n");
+}
+
+void sem_v(int semid)
+{
+	struct sembuf semv;
+	semv.sem_num=0;
+	semv.sem_op=1;
+	semv.sem_flg=SEM_UNDO;
+	if(semop(semid,&semv,1)==-1)
+		printf("semop_v error\n");
+}
+
+struct mes{
+	long type;
+	char message[50];
+};
 int main()
 {
+	char *buf;
+	struct mes my_message;
+	my_message.type=10;
+	sprintf(my_message.message,"wo shi fuwuqi:gong xiang nei cun\n");
 	key_t semkey;
 	key_t shmkey;
-	int shmid,semid;
-	
-	semkey=ftok(PATH1,0);
-	shmkey=ftok(PATH2,0);
-	
-	semid=semget(semkey,1,0666|IPC_CREAT);
-	shmid=shmget(shmkey,1024,0666|IPC_CREAT);
-	
-	char *p=(char *)shmat(shmid,NULL,0);
-	/*union semun{
-		int val;
-		struct semid_ds *buf;
-		short *array;
-	}sem_u;
-	
-	sem_u.val=1;
-	semctl(semid,0,SETVAL,sem_u);
-	*/
+	int shmid;
+	int semid;
+	semkey=ftok(PATH1,1);
+	semid=semget(semkey,1,IPC_CREAT|0777);
 	semctl(semid,0,SETVAL,1);
 	
-	void sem_p(void)
-	{
-		struct sembuf semp;
-		semp.sem_num=0;
-		semp.sem_op=-1;
-		semp.sem_flg=SEM_UNDO;
-		if(semop(semid,&semp,1)==-1)
-			printf("semop_p error\n");
-	}
 	
-	void sem_v(void)
-	{
-		struct sembuf semv;
-		semv.sem_num=0;
-		semv.sem_op=1;
-		semv.sem_flg=SEM_UNDO;
-		if(semop(semid,&semv,1)==-1)
-			printf("semop_v error\n");
-	}
+	shmkey=ftok(PATH2,1);
+	shmid=shmget(shmkey,1024,IPC_CREAT|0777);
+	buf=(char *)shmat(shmid,NULL,0);
 	
-	while(1){
-		printf("in the while\n");
-		sem_p();
-		memset(p,0,1024);
-		printf("please input some words\n");
-		fgets(p,1024,stdin);
-		sem_v();
-		if(strcmp(p,"quit\n")==0)
-			break;
-			
-		}
-		shmdt(p);
-	}
-		
-    client:
-    
-    #include<stdio.h>
+	sem_p(semid);
+	printf("after the sem_p\n");
+	sleep(10);
+	memcpy(buf,(char *)&my_message,sizeof(my_message));
+	sem_v(semid);
+}
+client：
+#include<stdio.h>
 #include<stdlib.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -78,65 +72,58 @@ int main()
 #include<errno.h>
 #include<sys/sem.h>
 
-#define PATH1 "/mnt/hgfs/share/practice/text1"
-#define PATH2 "/mnt/hgfs/share/practice/text2"
+#define PATH1 "/mnt/shared/practice/text1"
+#define PATH2 "/mnt/shared/practice/text2"
 
+void sem_p(int semid)
+{
+	struct sembuf semp;
+	semp.sem_num=0;
+	semp.sem_op=-1;
+	semp.sem_flg=SEM_UNDO;
+	if(semop(semid,&semp,1)==-1)
+		printf("semop_p error\n");
+}
+
+void sem_v(int semid)
+{
+	struct sembuf semv;
+	semv.sem_num=0;
+	semv.sem_op=1;
+	semv.sem_flg=SEM_UNDO;
+	if(semop(semid,&semv,1)==-1)
+		printf("semop_v error\n");
+}
+
+struct mes{
+	long type;
+	char message[50];
+};
 int main()
 {
-	int semid,shmid;
-	key_t semkey,shmkey;
+	char *buf;
+	struct mes my_message;
+	key_t semkey;
+	key_t shmkey;
+	int shmid;
+	int semid;
+	semkey=ftok(PATH1,1);
+	semid=semget(semkey,1,IPC_CREAT|0777);
 	
-	semkey=ftok(PATH1,0);
-	shmkey=ftok(PATH2,0);
 	
-	semid=semget(semkey,1,0666|IPC_CREAT);
-	shmid=shmget(shmkey,1024,0666|IPC_CREAT);
+	shmkey=ftok(PATH2,1);
+	shmid=shmget(shmkey,1024,IPC_CREAT|0777);
+	buf=(char *)shmat(shmid,NULL,0);
+	printf("ready to read the memory\n");
+	sem_p(semid);
+	memcpy((char *)&my_message,buf,sizeof(my_message));
+	printf("the id=%d,the buf=%s\n",my_message.type,my_message.message);
+	sem_v(semid);
+	shmdt(buf);
 	
-	char *p=(char *)shmat(shmid,NULL,0);
-	
-	/*union semun{
-		int val;
-		struct semid_ds *buf;
-		short *array;
-	}sem_u;
-	
-	sem_u.val=1;
-	semctl(semid,0,SETVAL,sem_u);
-	
-*/
-	void sem_p(void)
-	{
-		struct sembuf semp;
-		semp.sem_num=0;
-		semp.sem_op=-1;
-		semp.sem_flg=SEM_UNDO;
-		if(semop(semid,&semp,1)==-1)
-			printf("semop_p error\n");
-	}
-	
-	void sem_v(void)
-	{
-		struct sembuf semv;
-		semv.sem_num=0;
-		semv.sem_op=1;
-		semv.sem_flg=SEM_UNDO;
-		if(semop(semid,&semv,1)==-1)
-			printf("semop_v error\n");
-	}
-	
-	while(1){
-		sem_p();
-		printf("the p=%s\n",p);
-		sem_v();
-		if(strcmp(p,"quit\n")==0)
-			break;
-		
-	}
-		shmdt(p);
-		
-		if(semctl(semid,0,IPC_RMID)==-1)
+	if(semctl(semid,0,IPC_RMID)==-1)
 			printf("semctl del error\n");
-		if(shmctl(shmid,IPC_RMID,0)==-1)
+	if(shmctl(shmid,IPC_RMID,0)==-1)
 			printf("shmctl error\n");
-		}
-    
+	
+}
