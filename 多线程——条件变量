@@ -1,3 +1,4 @@
+可以把pthread_cond_signal当做一个发送信号的，它只管发送信号，如果已经注册了接收处理函数就当中断处理，否则就不管这个信号了。
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
