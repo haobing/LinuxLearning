@@ -10,9 +10,12 @@ server：
 #include<errno.h>
 #include<sys/sem.h>
 #include<string.h>
+#include<fcntl.h>
+
 
 #define PATH1 "/mnt/shared/practice/text1"
 #define PATH2 "/mnt/shared/practice/text2"
+#define PATH3 "/text"
 
 void sem_p(int semid)
 {
@@ -41,6 +44,7 @@ struct mes{
 int main()
 {
 	char *buf;
+	char words[20];
 	struct mes my_message;
 	my_message.type=10;
 	sprintf(my_message.message,"wo shi fuwuqi:gong xiang nei cun\n");
@@ -48,6 +52,7 @@ int main()
 	key_t shmkey;
 	int shmid;
 	int semid;
+	
 	semkey=ftok(PATH1,1);
 	semid=semget(semkey,1,IPC_CREAT|0777);
 	semctl(semid,0,SETVAL,1);
@@ -57,13 +62,19 @@ int main()
 	shmid=shmget(shmkey,1024,IPC_CREAT|0777);
 	buf=(char *)shmat(shmid,NULL,0);
 	
+	unlink(PATH3);
+	mkfifo(PATH3,0777);
+	
 	sem_p(semid);
-	printf("after the sem_p\n");
-	sleep(10);
+	int fd=open(PATH3,O_RDONLY);
+	read(fd,words,sizeof(words));
+	printf("after the sem_p,and the words from client is:%s\n",words);
+	sleep(5);
 	memcpy(buf,(char *)&my_message,sizeof(my_message));
 	sem_v(semid);
 }
-client：
+	
+client:
 #include<stdio.h>
 #include<stdlib.h>
 #include <sys/ipc.h>
@@ -71,9 +82,12 @@ client：
 #include<string.h>
 #include<errno.h>
 #include<sys/sem.h>
+#include<fcntl.h>
+
 
 #define PATH1 "/mnt/shared/practice/text1"
 #define PATH2 "/mnt/shared/practice/text2"
+#define PATH3 "/text"
 
 void sem_p(int semid)
 {
@@ -102,6 +116,7 @@ struct mes{
 int main()
 {
 	char *buf;
+	char words[20];
 	struct mes my_message;
 	key_t semkey;
 	key_t shmkey;
@@ -114,6 +129,13 @@ int main()
 	shmkey=ftok(PATH2,1);
 	shmid=shmget(shmkey,1024,IPC_CREAT|0777);
 	buf=(char *)shmat(shmid,NULL,0);
+	
+	mkfifo(PATH3,0777);
+	int fd=open(PATH3,O_WRONLY);
+	printf("please input the words\n");
+	fgets(words,sizeof(words),stdin);
+	write(fd,words,strlen(words));
+
 	printf("ready to read the memory\n");
 	sem_p(semid);
 	memcpy((char *)&my_message,buf,sizeof(my_message));
