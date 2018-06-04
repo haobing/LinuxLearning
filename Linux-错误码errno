@@ -1,0 +1,12 @@
+Linux中系统调用的错误都存储于 errno中，errno由操作系统维护，存储就近发生的错误，即下一次的错误码会覆盖掉上一次的错误。
+字符串显示错误信息：char *strerror(int errnum);
+查看系统所有错误码所代表的含义：
+int main()
+{
+    int tmp = 0;
+    for(tmp = 0; tmp <=256; tmp++)
+    {
+        printf("errno: %2d\t%s\n",tmp,strerror(tmp));
+    }
+    return 0;
+}
