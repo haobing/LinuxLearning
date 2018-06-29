@@ -1,6 +1,6 @@
 epoll_wait运行的道理是
 等侍注册在epfd上的socket fd的事务的产生，若是产生则将产生的sokct fd和事务类型放入到events数组中。
-并 且将注册在epfd上的socket fd的事务类型给清空，注意是类型，而不是事件*****重要 
+并 且将注册在epfd上的socket fd的事务类型给清空，注意是类型，而不是事件*****重要 ：注意如果ev.events不赋值的话看程序结果怎么样
 所以若是下一个轮回你还要存眷这个socket 
 fd的话，则须要用epoll_ctl（epfd，EPOLL_CTL_MOD，listenfd，&ev）来从头设置socket 
 
