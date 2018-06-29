@@ -2,7 +2,70 @@ epoll_wait运行的道理是
 等侍注册在epfd上的socket fd的事务的产生，若是产生则将产生的sokct fd和事务类型放入到events数组中。
 并 且将注册在epfd上的socket fd的事务类型给清空，注意是类型，而不是事件*****重要 ：注意如果ev.events不赋值的话看程序结果怎么样
 所以若是下一个轮回你还要存眷这个socket 
-fd的话，则须要用epoll_ctl（epfd，EPOLL_CTL_MOD，listenfd，&ev）来从头设置socket 
+fd的话，则须要用epoll_ctl（epfd，EPOLL_CTL_MOD，listenfd，&ev）来从头设置socket
+#include <sys/epoll.h>
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+
+#define BUFFER_SIZE 512
+#define log(fmt, arg...) printf(""fmt, ##arg)
+
+void main(){
+    int efd, fds, i, fd;
+    int ret;
+    struct epoll_event g_event;             // epoll事件
+    struct epoll_event *epoll_events_ptr; 
+    char buffer[BUFFER_SIZE] = {0}; 
+
+    efd = epoll_create1(0);                 //创建epoll实例
+    if (efd == -1) {
+        log("create epoll fail \r\n");
+        goto err;
+
+    }
+    log("create epoll instance success \r\n");
+    
+    epoll_events_ptr = (struct epoll_event *)calloc(2, sizeof(struct epoll_event));
+    if (epoll_events_ptr == NULL) {
+        log("calloc fail \r\n");
+        goto err;
+    }
+
+
+    g_event.data.fd = STDIN_FILENO; //监听标准输入
+    g_event.events = EPOLLIN;                               //默认水平触发
+    epoll_ctl(efd, EPOLL_CTL_ADD, STDIN_FILENO, &g_event);          
+
+    while(1) {                                              //监听epoll事件
+        fds = epoll_wait(efd, epoll_events_ptr, 2, -1); 
+        for (i = 0; i<fds; i++)
+        {    
+            if (epoll_events_ptr[i].events & EPOLLIN)
+            {   
+                ret = read(STDIN_FILENO, buffer, 1);
+                if(ret != -1)
+                    log("recv msg : %s \n", buffer);
+            }     
+            memset(buffer, 0, BUFFER_SIZE);
+        }        
+    }   
+
+    
+err:
+    if(epoll_events_ptr) 
+        free(epoll_events_ptr);
+
+    return ;
+
+}
+
+
+
+epoll TCP-------------------------------------------------------------------------------------------------------------------
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
