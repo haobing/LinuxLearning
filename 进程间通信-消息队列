@@ -10,7 +10,7 @@
 且读出消息的顺序和发送进消息队列的顺序相同相同
 
 注意：ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg)中msgsz的长度 应该是不包括long type的长度,
-即为sizieof(message.buf);
+即为sizieof(message.buf);msgsnd中也是一样的，它们两个的长度应该是一致的
 
 #include <stdlib.h>  
 #include <stdio.h>  
