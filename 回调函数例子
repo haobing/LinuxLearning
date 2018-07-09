@@ -1,0 +1,24 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <string.h>
+typedef void(*func)(char *);
+
+func fun;
+
+void bw_set_callback(func fu){
+    fun=fu;
+}
+
+void print(char *buf)
+{
+    printf("the buf=%s\n",buf);
+}
+
+
+int main(){
+    bw_set_callback(print);
+    fun("wo shi shui");
+
+}
