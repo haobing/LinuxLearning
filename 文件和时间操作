@@ -1,0 +1,292 @@
+1、时间操作time_t time(time_t *)函数是生成返回自纪元 Epoch（1970-01-01 00:00:00 UTC）起经过的时间，以秒为单位；
+struct tm *localtime(const time_t *clock);用秒时间生成年月日等形式的时间
+struct tm {
+int tm_sec; /* 秒 – 取值区间为[0,59] */
+int tm_min; /* 分 - 取值区间为[0,59] */
+int tm_hour; /* 时 - 取值区间为[0,23] */
+int tm_mday; /* 一个月中的日期 - 取值区间为[1,31] */
+int tm_mon; /* 月份（从一月开始，0代表一月） - 取值区间为[0,11] */
+int tm_year; /* 年份，其值等于实际年份减去1900 */
+int tm_wday; /* 星期 – 取值区间为[0,6]，其中0代表星期天，1代表星期一，以此类推 */
+int tm_yday; /* 从每年的1月1日开始的天数 – 取值区间为[0,365]，其中0代表1月1日，1代表1月2日，以此类推 */
+int tm_isdst; /* 夏令时标识符，实行夏令时的时候，tm_isdst为正。不实行夏令时的时候，tm_isdst为0；不了解情况时，tm_isdst()为负。
+long int tm_gmtoff; /*指定了日期变更线东面时区中UTC东部时区正秒数或UTC西部时区的负秒数*/
+const char *tm_zone; /*当前时区的名字(与环境变量TZ有关)*/
+};
+
+int gettimeofday(struct  timeval*tv,struct  timezone *tz )获得当前精确时间（1970年1月1日到现在的时间）
+struct timeval {
+time_t tv_sec;	// seconds 
+long tv_usec;	// microseconds 
+};
+
+2、读写文件时候需要用getcwd获得当前工作路径，然后用chdir(filepath)函数，转到文件所在路径，执行文件打开读写操作；
+     结束后再用chdir函数转到当前工作路径
+
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<time.h>
+#include<sys/types.h>
+#include<unistd.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include<errno.h>
+
+
+#define size_1G 1024*1024*1024
+
+
+//系统时间结构体
+typedef struct _systime{
+   unsigned int year;
+   unsigned int month;
+   unsigned int day;
+   unsigned int hour;
+   unsigned int min;
+   unsigned int sec;
+}SYSTIME;
+
+//获取系统时间并存放在SYSTIME类型的结构体中
+void get_curtime(SYSTIME *curtime){
+    time_t timenow;
+    struct tm *timeinfo;
+    if(curtime){
+        memset(curtime,0,sizeof(SYSTIME));
+    }else{
+        printf("the curtime is NULL\n");
+        
+    }
+    time(&timenow);
+    timeinfo=localtime(&timenow);
+    curtime->year=timeinfo->tm_year+1900;
+    curtime->month=timeinfo->tm_mon+1;
+    curtime->day=timeinfo->tm_mday;
+    curtime->hour=timeinfo->tm_hour;
+    curtime->min=timeinfo->tm_min;
+    curtime->sec=timeinfo->tm_sec;  
+}
+
+//按照系统时间命名的字符串
+void get_curtime_string(char *timstr){
+    SYSTIME curtime;
+    get_curtime(&curtime);
+    sprintf(timstr,"-%d-%d-%d %d:%d:%d",curtime.year,curtime.month,curtime.day,curtime.hour,curtime.min,curtime.sec);
+}
+//由文件类型和文件时间生成文件名
+void get_file_name(char *file_name,char *file_type,char *file_time)
+{
+    int typelen,timelen;
+    if(file_name!=NULL&&file_type!=NULL&&file_time!=NULL){
+        sprintf(file_name,"%s%s",file_type,file_time);
+          
+    }
+    else{
+        printf("the file_name or file_type or file_time is NULL");
+        
+    }
+}
+//判断系统目录是否存在
+int file_exist(char *dir)
+{
+    struct stat sb;
+    return (0==stat(dir,&sb));
+}
+
+//创建目录
+void file_mkdir(char *dir){
+    if(!file_exist(dir)){
+        char cmd[256];
+        snprintf(cmd,sizeof(cmd),"mkdir -p %s",dir);
+        system(cmd);
+    }
+
+}
+
+
+void write_file(char *buf,char *filepath,char *filename,int buf_len)
+{
+    FILE *fp;
+    int elen=0;
+    int alen=0;
+    char curdir[1024];
+    if(NULL==getcwd(curdir,sizeof(curdir))){
+        strcpy(curdir,"/");
+    }
+    file_mkdir(filepath);
+    if(opendir(filepath)!=NULL){
+        chdir(filepath);
+
+        if(access(filename,F_OK)==0){
+        printf("error:the file:%s is already exist\n",filename);
+     }
+        else{
+         fp=fopen(filename,"wb");
+            if(fp==NULL){
+            printf("error:fopen file error\n");
+         }
+            else 
+            {
+             if(buf_len<1024){
+                elen=fwrite(buf,1,buf_len,fp);
+                }else{
+                 while(1){
+                    elen=fwrite(buf+alen,1,1024,fp);
+                    if(elen==0){
+                        break;
+                 }
+                 alen+=elen;
+
+                 }
+
+                }
+                fclose(fp);
+         }
+        }
+    }else{
+     printf("open dir error\n");
+
+        }
+    chdir(curdir);
+}
+
+//把buf内容写入文件夹filepath中的filetype类型的文件中
+void write_buf_to_file(char *buf,int buf_len,char *filetype,char *filepath)
+{
+    char timestr[64];
+    char filename[128];
+    get_curtime_string(timestr);
+    get_file_name(filename,filetype,timestr);
+    write_file(buf,filepath,filename,buf_len);
+
+}
+
+//将结构体SYSTIME表示的时间生成utc数字时间
+time_t GetUtcTime(SYSTIME *filetime){
+    time_t utctime;
+    struct tm tmtime;
+    tmtime.tm_year=filetime->year-1900;
+    tmtime.tm_mon=filetime->month-1;
+    tmtime.tm_mday=filetime->day;
+    tmtime.tm_min=filetime->min;
+    tmtime.tm_sec=filetime->sec;
+    utctime=mktime(&tmtime);
+    return utctime;
+}
+
+//删除一个文件夹里面的所有符合条件的文件
+int del_file(char *filedir,time_t from,time_t to){
+    DIR *dir;
+    struct dirent *ptr;
+    char base[1000];
+    if((dir=opendir(filedir))==NULL){
+        perror("open dir error");
+        return -1;
+    }
+    while((ptr=readdir(dir))!=NULL){
+        if(ptr->d_type==8){
+            /*
+            将文件名的时间取出来转换为utc时间
+            *****
+
+            */
+        }
+    }
+}
+//获取文件大小
+unsigned long get_file_size(char *filename){
+    unsigned long filesize=-1;
+    FILE *fp=NULL;
+
+    fp=fopen(filename,"rb");
+    if(fp==NULL)
+    return filesize;
+    fseek(fp,0L,SEEK_END);
+    filesize=ftell(fp);
+    fclose(fp);
+
+    return filesize;
+
+}
+//把文件的内容读到Buf里面
+void read_file_tobuf(char *filename,unsigned long file_size,char *buf){
+    FILE *fp;
+    int len=0,size=0;
+    if((fp=fopen(filename,"rb"))==NULL){
+        printf("open error,%s\n",strerror(errno));
+    }
+    if(file_size>size_1G){
+        printf("file too large\n");
+        
+    }else{while(1){
+            size=fread(buf+len,1,file_size-len+1,fp);
+            len+=size;
+            printf("size=%d\n",size);
+          if(feof(fp))
+            break;
+        
+    }
+
+    }
+    
+    
+
+}
+//读取系统目录中的文件
+int parse_file(char *filepath){
+    DIR *dir;
+    int ret;
+    struct dirent *ptr;
+    unsigned long filesize;
+    char *buf;
+    char curdir[1024];
+    if((dir=opendir(filepath))==NULL){
+        printf("read_dirfile_tobuf error\n");
+        return -1;
+    }
+    if(NULL==getcwd(curdir,sizeof(curdir))){
+        strcpy(curdir,"/");
+    }
+    chdir(filepath);
+     
+    while((ptr=readdir(dir))!=NULL){
+        if(ptr->d_type==8){
+            filesize=get_file_size(ptr->d_name);
+            buf=(char *)malloc(filesize+1);
+             
+            read_file_tobuf(ptr->d_name,filesize,buf);
+            
+            /*解析函数
+            */
+           printf("the read buf=%s\n",buf);
+           free(buf);
+
+        }
+
+
+
+    }
+
+    chdir(curdir);
+}
+
+
+void demo()
+{
+    
+    char filetype[]="configurejson";
+    char buf[]="the file content*****\n";
+    char filepath[]="/home/hah";
+    
+    write_buf_to_file(buf,20,filetype,filepath);
+}
+int main()
+{
+   // demo();
+  // parse_file("/home/hah");
+
+}
+
