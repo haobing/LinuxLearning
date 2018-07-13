@@ -2,6 +2,7 @@
 1、时间操作time_t time(time_t *)函数是生成返回自纪元 Epoch（1970-01-01 00:00:00 UTC）起经过的时间，以秒为单位；
 
 2、 struct tm *localtime(const time_t *clock);用秒时间生成年月日等形式的时间
+     time_t mktime(strcut tm * timeptr);用struct tm类型的时间生成time_t秒表示的时间
 struct tm {
 int tm_sec; /* 秒 – 取值区间为[0,59] */
 int tm_min; /* 分 - 取值区间为[0,59] */
