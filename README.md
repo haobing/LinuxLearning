@@ -30,4 +30,6 @@ struct _msg_xml {
 	ucnode_s	node_list;
 	char		pMsg_data[0];
 };
+
+
 十、注意这种写法(unsigned long)(&(type *)0)->member) )定义为把0地址转化为type类型的指针，可以得到结构体内各个元素的相对地址空间
