@@ -1,5 +1,7 @@
+一、时间
 1、时间操作time_t time(time_t *)函数是生成返回自纪元 Epoch（1970-01-01 00:00:00 UTC）起经过的时间，以秒为单位；
-struct tm *localtime(const time_t *clock);用秒时间生成年月日等形式的时间
+
+2、 struct tm *localtime(const time_t *clock);用秒时间生成年月日等形式的时间
 struct tm {
 int tm_sec; /* 秒 – 取值区间为[0,59] */
 int tm_min; /* 分 - 取值区间为[0,59] */
@@ -14,13 +16,25 @@ long int tm_gmtoff; /*指定了日期变更线东面时区中UTC东部时区正�
 const char *tm_zone; /*当前时区的名字(与环境变量TZ有关)*/
 };
 
-int gettimeofday(struct  timeval*tv,struct  timezone *tz )获得当前精确时间（1970年1月1日到现在的时间）
+3、 int gettimeofday(struct  timeval*tv,struct  timezone *tz )获得当前精确时间（1970年1月1日到现在的时间）
 struct timeval {
 time_t tv_sec;	// seconds 
 long tv_usec;	// microseconds 
 };
 
-2、读写文件时候需要用getcwd获得当前工作路径，然后用chdir(filepath)函数，转到文件所在路径，执行文件打开读写操作；
+
+4 、struct timespec {
+time_t tv_sec; // seconds 
+long tv_nsec; // and nanoseconds 
+};
+struct timespec有两个成员，一个是秒，一个是纳秒, 所以最高精确度是纳秒。
+一般由函数int clock_gettime(clockid_t, struct timespec *)获取特定时钟的时间，常用如下4种时钟：
+CLOCK_REALTIME 统当前时间，从1970年1.1日算起
+CLOCK_MONOTONIC 系统的启动时间，不能被设置
+CLOCK_PROCESS_CPUTIME_ID 本进程运行时间
+CLOCK_THREAD_CPUTIME_ID 本线程运行时间
+
+二、文件目录：读写文件时候需要用getcwd获得当前工作路径，然后用chdir(filepath)函数，转到文件所在路径，执行文件打开读写操作；
      结束后再用chdir函数转到当前工作路径
 
 
