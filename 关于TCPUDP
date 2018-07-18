@@ -1,3 +1,5 @@
 1、sendto函数默认是非阻塞的，recvfrom默认是阻塞的
 
+setsockopt可以设置端口复用，也可以设置rcev和send阻塞时间
+
 
