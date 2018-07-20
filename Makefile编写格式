@@ -1,4 +1,7 @@
  第一种形式：
+ 
+ 一般我们可以使用“$(wildcard *.c)”来获取工作目录下的所有的.c文件列表
+ 
  edit : main.o kbd.o command.o display.o /
            insert.o search.o files.o utils.o
             cc -o edit main.o kbd.o command.o display.o /
