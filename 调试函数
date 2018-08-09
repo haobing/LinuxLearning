@@ -1,0 +1,72 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<stdarg.h>
+
+#define EBOS_OUT    0x01
+#define EBOS_WARN 0x02
+#define EBOS_ERROR  0x04
+
+#define level_out 1
+#define level_warn 2
+#define level_error 3
+
+
+
+#define bweb_debug(level,fmt,...)\
+				do{\
+					if(level&debug_flag){\
+						_bw_log("FUNCTION: %s, LINE: %d, "fmt,__FUNCTION__,__LINE__,##__VA_ARGS__);\
+					}}while(0)
+						
+       
+int debug_flag=4;
+
+
+void _bw_log(const char *fmt,...)
+{
+int n=0;
+char _msg[1024];
+
+va_list params;
+va_start(params,fmt);
+
+memset(_msg,0,1024);
+
+vsnprintf(_msg,1024,fmt,params);
+
+va_end(params);
+
+printf(_msg);
+
+fflush(stdout);
+}
+
+/**********************
+level=1,输出所有打印信息
+level=2,输出警告和错误信息
+level=3,输出错误信息
+**************************/
+int bweb_set_debug_level(int level)
+{
+	switch(level)
+	{
+		case 1: 
+			debug_flag=EBOS_OUT|EBOS_WARN|EBOS_ERROR;break;
+		case 2:
+			debug_flag=EBOS_WARN|EBOS_ERROR;break;
+		case 3:
+			debug_flag=EBOS_ERROR;break;
+			default:
+				printf("bweb_set_debug_level error\n");
+	}
+}
+			
+			
+int main()
+{
+	//bweb_set_debug_level(2);
+	
+	bweb_debug(EBOS_ERROR,"hello\n");
+	return 0;
+}
