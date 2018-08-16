@@ -1,0 +1,145 @@
+单播用于两个主机之间的端对端通信，广播用于一个主机对整个局域网上所有主机上的数据通信。
+单播和广播是两个极端，要么对一个主机进行通信，要么对整个局域网上的主机进行通信。实际情况下，
+经常需要对一组特定的主机进行通信，而不是整个局域网上的所有主机，这就是多播的用途。
+
+IP 多播通信必须依赖于 IP 多播地址，在 IPv4 中它是一个 D 类 IP 地址，范围从 224.0.0.0 到 239.255.255.255，并被划分为局部链接多播地址、
+预留多播地址和管理权限多播地址三类：
+
+1）局部链接多播地址范围在 224.0.0.0~224.0.0.255，这是为路由协议和其它用途保留的地址，路由器并不转发属于此范围的IP包；
+
+2）预留多播地址为 224.0.1.0~238.255.255.255，可用于全球范围（如Internet）或网络协议；
+
+3）管理权限多播地址为 239.0.0.0~239.255.255.255，可供组织内部使用，类似于私有 IP 地址，不能用于 Internet，可限制多播范围。
+多播只能用 UDP 或原始 IP 实现，不能用 TCP
+
+代码示例：
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <unistd.h>  
+#include <fcntl.h>  
+#include <sys/socket.h>  
+#include <netinet/in.h>  
+#include <arpa/inet.h>  
+#include <string.h>  
+#include <errno.h>  
+#include <sys/types.h>  
+  
+int main(int argc, char*argv[])    
+{       
+    int sockfd; // 套接字文件描述符    
+    struct sockaddr_in local_addr; // 本地地址   
+    int err = -1;   
+    char group[16] = "224.0.0.88"; // 多播组 IP  
+        
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);  //建立套接字  
+    if (sockfd == -1)    
+    {    
+        perror("socket()");    
+        return -1;    
+    }       
+        
+    // 初始化地址   
+    memset(&local_addr, 0, sizeof(local_addr));    
+    local_addr.sin_family = AF_INET;    
+    local_addr.sin_addr.s_addr = htonl(INADDR_ANY);    
+    local_addr.sin_port = htons(8000);  
+        
+    // 绑定socket    
+    err = bind(sockfd,(struct sockaddr*)&local_addr, sizeof(local_addr));    
+    if(err < 0)    
+    {    
+        perror("bind()");    
+        return -2;    
+    }      
+  
+    struct ip_mreq mreq; // 多播地址结构体                                   
+  
+    // 加入多播组，相当于创建一个QQ群，某人加入此群  
+    mreq.imr_multiaddr.s_addr = inet_addr(group); // 多播地址，类似于 QQ 群号   
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);// 将本机加入多播组，类似于某人加入此群  
+    // 加入多播组  
+    err = setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));    
+    if (err < 0)    
+    {    
+        perror("setsockopt():IP_ADD_MEMBERSHIP");    
+        return -4;    
+    }    
+  
+    int times = 0;    
+    int addr_len = 0;    
+    char buff[256] = {0};    
+    int n = 0;   
+  
+    // 循环接收广播组的消息，5次后退出  
+    for(times = 0; times<5; times++)    
+    {    
+        addr_len = sizeof(local_addr);    
+        memset(buff, 0, sizeof(buff));       
+          
+        // 接收数据   
+        n = recvfrom(sockfd, buff, sizeof(buff), 0,(struct sockaddr*)&local_addr, &addr_len);    
+        if( n== -1)     
+        {    
+            perror("recvfrom()");    
+        }    
+  
+        printf("Recv %dst message from server:%s\n", times, buff);    
+        sleep(2);     
+    }    
+        
+    // 退出广播组   
+    err = setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP,&mreq, sizeof(mreq));    
+            
+    close(sockfd);   
+  
+    return 0;    
+}   
+ 
+
+
+向多播组发送消息
+
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <unistd.h>  
+#include <fcntl.h>  
+#include <sys/socket.h>  
+#include <netinet/in.h>  
+#include <arpa/inet.h>  
+#include <string.h>  
+#include <errno.h>  
+#include <sys/types.h>  
+  
+int main(int argc, char*argv)  
+{  
+    int sockfd; // 套接字文件描述符  
+    struct sockaddr_in dest_addr; // 目标ip  
+    char buf[] = "BROADCAST TEST DATA";  
+  
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); // 建立套接字  
+    if (s == -1)  
+    {  
+        perror("socket()");  
+        return -1;  
+    }  
+  
+    // 初始化目标 ip 信息  
+    memset(&dest_addr, 0, sizeof(dest_addr));  
+    dest_addr.sin_family = AF_INET;                 
+    dest_addr.sin_addr.s_addr = inet_addr("224.0.0.88"); // 目的地址，为多播地址  
+    dest_addr.sin_port = htons(8000);   // 多播服务器的端口也是 8000  
+  
+    // 向多播地址发送数据  
+    while(1){  
+        int n = sendto(sockfd, buf, strlen(buf), 0,(struct sockaddr*)&dest_addr, sizeof(dest_addr));  
+        if( n < 0)  
+        {  
+            perror("sendto()");  
+            return -2;  
+        }        
+  
+        sleep(1);  
+    }  
+  
+    return 0；  
+}  
