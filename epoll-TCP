@@ -291,5 +291,4 @@ int sendbroadmsg(int sockfd)
 		}
 	}
 }
-			  	
-		 
+			  		 
