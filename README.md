@@ -39,3 +39,21 @@ struct _msg_xml {
 
 
 十、注意这种写法(unsigned long)(&(type *)0)->member) )定义为把0地址转化为type类型的指针，可以得到结构体内各个元素的相对地址空间
+
+
+十一、当将数组作为字符串处理的时候，末尾会自动填充0，当作为字节流处理的时候就不会了，例：
+#include "stdio.h"
+#include "stdlib.h"
+int main()
+{
+char a[5]="11111";
+int i=0;
+for(i=0;i<5;i++)
+{
+printf(" %02x ",a[i]);
+}
+
+printf("字符串为%s \n",a);
+}
+输出为31 31 31 31 31  字符串为1111
+
