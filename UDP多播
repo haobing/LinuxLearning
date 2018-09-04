@@ -10,100 +10,69 @@
 
 （5）从多播组离开。
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define MCAST_ADDR "224.0.0.88"
-#define MCAST_PORT 8888
-int broad(int port)
-{
-    struct sockaddr_in seraddr,cliaddr;
-    int sockfd = 0;
-    unsigned int sockelen = 0;
-    int ret = 0;
-    int n = 0;
-    char buffer[1024];
-
-    sockfd = socket(AF_INET,SOCK_DGRAM,0);
-    if(sockfd<0)
-    {
-        printf("socket error\n");
-        return -1;
-    }
-
-    sockelen = sizeof(seraddr);
-    memset(&seraddr,0,sockelen);
-    seraddr.sin_family = AF_INET;
-    seraddr.sin_port = htons(port);
-    seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    ret = bind(sockfd,(struct sockaddr*)&seraddr,sockelen);
-    if(ret<0)
-    {
-        printf("bind error\n");
-        return -1;
-    }
-
-    int loop = 1;
-    ret = setsockopt(sockfd,IPPROTO_IP,IP_MULTICAST_LOOP,&loop,sizeof(loop));
-    if(ret < 0)
-    {
-        printf("setsockopt error\n");
-        return -1;
-    }
-
-    struct ip_mreq mreq;
-    mreq.imr_multiaddr.s_addr = inet_addr(MCAST_ADDR);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-    ret = setsockopt(sockfd,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
-    if(ret < 0)
-    {
-        printf("setsockopt error\n");
-        return -1;
-    }
-    unsigned char *msg = (unsigned char *)buffer;
-    int i=0;
-    printf("the while\n");
-    while(1)
-    {
-        n = recvfrom(sockfd,buffer,sizeof(buffer),0,(struct sockaddr*)&cliaddr,&sockelen);
-        if(n<0)
-        {
-            printf("recvfrom error\n");
-            break;
-        }
-        
-        if(n>0)
-        {
-            for(i=0;i<n;i++)
-            {
-                printf(" %02x ",msg[i]);
-                if(i == 187)
-                {
-                    printf("***\n");
-                }
-            }
-            printf("the end\n");
-        }
-    }
-    ret = setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP,&mreq, sizeof(mreq));
-   // close(sockfd);
-    return 0;
-}
-
-int main()
-{
-    int ret = 0;
-    ret = broad(8888);
-    if(ret<0)
-    {
-        printf("error\n");
-    }
-
-}
+#include <sys/types.h>    
+#include <sys/socket.h>    
+#include <netinet/in.h>    
+#include <arpa/inet.h>    
+#include <time.h>    
+#include <string.h>    
+#include <stdio.h>    
+#include <unistd.h>    
+#include <stdlib.h>    
+#define HELLO_PORT  12345    
+#define HELLO_GROUP "225.0.0.37"    
+#define MSGBUFSIZE 256    
+int main(int argc, char *argv[])    
+{    
+    struct sockaddr_in addr;    
+    int fd, nbytes,addrlen;    
+    struct ip_mreq mreq;    
+    char msgbuf[MSGBUFSIZE];    
+    u_int yes=1; /*** MODIFICATION TO ORIGINAL */    
+    /* create what looks like an ordinary UDP socket */    
+    if ((fd=socket(AF_INET,SOCK_DGRAM,0)) < 0)     
+    {    
+        perror("socket");    
+        exit(1);    
+    }    
+    /**** MODIFICATION TO ORIGINAL */    
+    /* allow multiple sockets to use the same PORT number */    
+    if (setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes)) < 0)     
+    {    
+        perror("Reusing ADDR failed");    
+        exit(1);    
+    }    
+    /*** END OF MODIFICATION TO ORIGINAL */    
+    /* set up destination address */    
+    memset(&addr,0,sizeof(addr));    
+    addr.sin_family=AF_INET;    
+    addr.sin_addr.s_addr=htonl(INADDR_ANY); /* N.B.: differs from sender */    
+    addr.sin_port=htons(HELLO_PORT);    
+    /* bind to receive address */    
+    if (bind(fd,(struct sockaddr *) &addr,sizeof(addr)) < 0)    
+    {    
+        perror("bind");    
+        exit(1);    
+    }    
+    /* use setsockopt() to request that the kernel join a multicast group */    
+    mreq.imr_multiaddr.s_addr=inet_addr(HELLO_GROUP);    
+    mreq.imr_interface.s_addr=htonl(INADDR_ANY);    
+    if (setsockopt(fd,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq)) < 0)     
+    {    
+        perror("setsockopt");    
+        exit(1);    
+    }    
+    /* now just enter a read-print loop */    
+    while (1)     
+    {    
+        //ssize_t recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);    
+        addrlen=sizeof(addr);    
+        if ((nbytes=recvfrom(fd, msgbuf, MSGBUFSIZE, 0, (struct sockaddr *) &addr, (socklen_t *)&addrlen)) < 0)     
+        {    
+            perror("recvfrom");    
+            exit(1);    
+        }    
+        puts(msgbuf);    
+    }    
+    return 0;    
+}    
