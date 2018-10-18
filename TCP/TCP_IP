@@ -1,8 +1,0 @@
-网络方面的读和写由于缓存极限的原因，可能导致实际读取或者写入的数据比要求的要少，因此需要多次循环读取或者写入：
-例如：leftlen = asklen;
-while(leftlen>0)
-{
-  n=recv(sockfd,buf,leftlen);
-  leftlen -= n;
-  buf += n;
- }
