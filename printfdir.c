@@ -39,8 +39,9 @@ void printfdir(char *dir,int depth)
 		printf("done\n");
 		exit(0);
 	}
-	
-	unsigned long bweb_get_file_size(char *filename)
+
+//获取文件大小
+unsigned long bweb_get_file_size(char *filename)
 {
     unsigned long filesize=-1;
 	
@@ -61,6 +62,7 @@ void printfdir(char *dir,int depth)
     return filesize;
 
 }
+
 //把文件的内容读到Buf里面
 int bweb_read_file_tobuf(char *filename,unsigned long file_size,char *buf)
 {
@@ -84,19 +86,16 @@ int bweb_read_file_tobuf(char *filename,unsigned long file_size,char *buf)
     }else
 	{
             size=fread(buf+len,1,file_size-len,fp);
-
             if(size!=file_size)
             {
-                printf("fread error\n");
-				
-				return -1;
+                printf("fread error\n");		
+		return -1;
             }      
     }
     if(fclose(fp))
 	{
-        printf("fclose error\n");
-			
-		return -1;
+        printf("fclose error\n");		
+	return -1;
     }
 	
 	return 1;
