@@ -352,3 +352,80 @@ $@表示目标文件名；
 -Wall 提示warning信息；
 
 -O3 表示第3级优化；
+
+UniSrcPath=./lib/libunisky/src
+UniSrc=$(wildcard $(UniSrcPath)/*.cpp)
+UniOBJS=$(patsubst %.cpp, %.o, $(UniSrc))
+
+DATE=$(shell date '+%Y/%m/%d %H:%M:%S')
+OS_TYPE=$(shell lsb_release -d)
+KERNEL_VERSION=$(shell uname -r)
+
+TARGET = ./msgpack
+DEBUG_TARGET = ./msgpack_g
+
+INC=-I./inc -I../../lib/libunisky/inc -I../../h -I../../h/ffmpeg3.4.1 
+LIB=-L./lib/ -L../../lib/x64
+
+
+SRC = ./src
+CPPSOURCES = $(wildcard $(SRC)/*.cpp)
+SOURCES = $(wildcard $(SRC)/*.c)
+
+SHARE = ../share
+CPPSOURCES += $(wildcard $(SHARE)/*.cpp)
+SOURCES += $(wildcard $(SHARE)/*.c)
+
+UTILS = ../utils
+SOURCES += $(wildcard $(UTILS)/*.c)
+
+CPPOBJS = $(patsubst %.cpp, %.o, $(CPPSOURCES))
+CPPOBJS += $(patsubst %.c, %.o, $(SOURCES))
+
+OPTIM=-O2
+DEBUG=-g 
+STRIP=-s
+	
+CC=gcc
+CPP=g++
+
+CFLAGS = -std=c99 -D__STDC_CONSTANT_MACROS $(DEBUG) $(OPTIM) -Wall $(INC) \
+	-DDATE=\""$(DATE)"\" -DKERNEL_VERSION=\""$(KERNEL_VERSION)"\" -DOS_TYPE=\""$(OS_TYPE)"\" 
+CPPFLAGS = -std=gnu++0x -D__STDC_CONSTANT_MACROS $(DEBUG) $(OPTIM) -Wall $(INC) \
+	-DDATE=\""$(DATE)"\" -DKERNEL_VERSION=\""$(KERNEL_VERSION)"\" -DOS_TYPE=\""$(OS_TYPE)"\" 
+
+LDFLAGS1 = $(LIB) -lu -lutils -lcomm -lpthread -lrt -lcurl -llog4cpp -lcrypto -lssl -ldl
+
+#STATIC LINK
+LDFLAGS2 = $(LIB) -lavfilter -lavformat -lavcodec -lpostproc -lavutil -lswscale  -lswresample \
+	-lpthread -lrt -lcurl -llog4cpp -lz \
+	-lx264 -lfdk-aac -lrtmp -lmp3lame -lutils
+	
+LDFLAGS = $(LDFLAGS1)
+
+all:$(TARGET) $(DEBUG_TARGET)
+
+$(TARGET): $(CPPOBJS) 
+	$(CPP) $(STRIP) $(CPPOBJS)  \
+	$(LDFLAGS) \
+	-o $(TARGET) 
+	
+$(DEBUG_TARGET): $(CPPOBJS) 
+	$(CPP) $(CPPOBJS) \
+	$(LDFLAGS) \
+	-o $(DEBUG_TARGET) 
+	
+
+%.o:%.c 
+#%.o:%.c
+	$(CC) $(CFLAGS) \
+	-c $<  -o $@
+	
+%.o:%.cpp $(HEADERS) $(COMM_H) $(ULIB_H)
+#%.o:%.cpp 
+	$(CPP) $(CPPFLAGS) \
+	-c $<  -o $@
+	
+clean: 
+	rm -f  $(CPPOBJS) \
+ 	$(TARGET) $(DEBUG_TARGET) 
