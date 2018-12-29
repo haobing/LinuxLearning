@@ -151,3 +151,204 @@ objects= main.o kbd.o command.o display.o insert.o search.o files.o utils.o
    bar.o : bar.c
 
            $(CC)-c $(CFLAGS) bar.c -o bar.o
+           
+           
+       
+本文给出万能Makefile的具体实现，以及对其中的关键点进行解析。所谓C++万能Makefile，即可编译链接所有的C++程序，而只需作很少的修改。
+
+号称万能Makefile，一统江湖。我对原版的Makefile做了些修改。首先揭开它的庐山真面目：
+
+####################################################
+# Generic makefile - 万能Makefile
+# for compiling and linking C++ projects on Linux 
+# Author: George Foot  Modified:Jackie Lee
+####################################################
+### Customising
+#
+# Adjust the following if necessary; EXECUTABLE is the target
+# executable's filename, and LIBS is a list of libraries to link in
+# (e.g. alleg, stdcx, iostr, etc). You can override these on make's
+# command line of course, if you prefer to do it that way.
+#
+#
+EXECUTABLE := main    # 可执行文件名
+LIBDIR:=              # 静态库目录
+LIBS :=               # 静态库文件名
+INCLUDES:=.           # 头文件目录
+SRCDIR:=              # 除了当前目录外，其他的源代码文件目录
+#
+# # Now alter any implicit rules' variables if you like, e.g.:
+
+CC:=g++
+CFLAGS := -g -Wall -O3
+CPPFLAGS := $(CFLAGS)
+CPPFLAGS += $(addprefix -I,$(INCLUDES))
+CPPFLAGS += -MMD
+#
+# # The next bit checks to see whether rm is in your djgpp bin
+# # directory; if not it uses del instead, but this can cause (harmless)
+# # `File not found' error messages. If you are not using DOS at all,
+# # set the variable to something which will unquestioningly remove
+# # files.
+#
+
+RM-F := rm -f
+
+
+# # You shouldn't need to change anything below this point.
+#
+SRCS := $(wildcard *.cpp) $(wildcard $(addsuffix /*.cpp, $(SRCDIR)))
+OBJS := $(patsubst %.cpp,%.o,$(SRCS))
+DEPS := $(patsubst %.o,%.d,$(OBJS))
+MISSING_DEPS := $(filter-out $(wildcard $(DEPS)),$(DEPS))
+MISSING_DEPS_SOURCES := $(wildcard $(patsubst %.d,%.cpp,$(MISSING_DEPS)))
+
+
+.PHONY : all deps objs clean veryclean rebuild info
+
+all: $(EXECUTABLE)
+
+deps : $(DEPS)
+
+objs : $(OBJS)
+
+clean :
+        @$(RM-F) *.o
+        @$(RM-F) *.d
+veryclean: clean
+        @$(RM-F) $(EXECUTABLE)
+
+rebuild: veryclean all
+ifneq ($(MISSING_DEPS),)
+$(MISSING_DEPS) :
+        @$(RM-F) $(patsubst %.d,%.o,$@)
+endif
+-include $(DEPS)
+$(EXECUTABLE) : $(OBJS)
+        $(CC) -o $(EXECUTABLE) $(OBJS) $(addprefix -L,$(LIBDIR)) $(addprefix -l,$(LIBS))
+
+info:
+        @echo $(SRCS)
+        @echo $(OBJS)
+        @echo $(DEPS)
+        @echo $(MISSING_DEPS)
+        @echo $(MISSING_DEPS_SOURCES)
+注：1)命令行前的空白符必须为一个制表符(Tab)；如，@$(RM-F) *.o前不是空格，而是一个制表符；
+
+内容解析
+
+1.Makefile基本语法
+
+target为要生成的目标文件；dependency为target的依赖文件；command为用于生成target的命令行；
+
+<target> : <dependency> <dependency> ...
+(tab)<command>
+(tab)<command>
+ .
+ .
+ .
+2.赋值符号 := 与 =
+
+  :=与=的区别在于，符号:=表示立即展开变量值。例如：
+
+A:=foo
+
+B:=$(A)
+
+A:=bar
+
+这时，B的值仍为foo，因为它已被展开，不会再随A的值改变而改变。
+
+3.符号#是Makefile的注释符号
+
+4.wildcard函数
+
+SRCS:=$(wildcard *.cpp) 表示列举当前目录中扩展名为.cpp的所有文件,然后赋值给变量SRCS。详细请google之。
+
+5.patsubst函数
+
+OBJS := $(patsubst %.cpp,%.o,$(SRCS))表示，将$(SRCS)中所有满足模式%.cpp的字符串替换为%.o。
+
+6.filter-out函数
+
+$(filter-out $(A),$(B))表示从B中过滤掉A中的内容，返回剩余内容；
+
+7. “.PHONY”
+
+用.PHONY修饰的target是“伪目标”，不需要生成真实的文件；make假定phony target是已经生成的，然后更新它后边的依赖文件和执行它下边的命令(command)；
+
+8.all deps objs clean veryclean rebuild info
+
+这些都是“伪目标”。
+
+all是第一个目标，所以输入make时它被默认执行；all生成或更新所有*.cpp文件对应的*.d文件和*.o文件，并链接所有*.o文件生成可执行文件$(EXECUTABLE)。
+
+deps仅仅生成*.d文件；.d文件是什么文件？它包含了代码文件的依赖信息。
+
+objs仅仅生成*.o文件；.o文件是C++代码编译后的中间结果文件，废话！
+
+clean用于删除*.d文件和*.o文件。
+
+veryclean删除*.d文件、*.o文件，还有名为$(EXECUTABLE)的可执行文件。
+
+rebuild先调用veryclean清除结果文件，再调用all重新编译和链接。
+
+info查看某些信息。
+
+使用方法：
+
+make deps即可执行deps；
+
+9.ifneq...else...endif
+
+条件语句，ifneq表示如果不想等，则...；
+
+10.include <files>语句
+
+include表示把<files>的内容包含进来；
+
+$(DEPS)是包含依赖信息的文件，每个源文件对应一个.d文件；-include $(DEPS)表示把这些依赖信息包含进来；
+
+11.链接*.o文件，生成可执行文件
+
+主菜来了！
+
+$(EXECUTABLE) : $(OBJS)
+        $(CC) -o $(EXECUTABLE) $(OBJS) $(addprefix -l,$(LIBS))
+ 
+
+$(EXECUTABLE)为可执行文件名；$(OBJS)为所有.o文件名；$(CC)在这里是g++；$(addprefix -l,$(LIBS)添加引用库；
+
+前面说好的*.d文件和*.o文件是怎么生成的呢？貌似没有命令指出要生成它们呀！请看隐含规则！
+
+12. 隐含规则(Implicit rules)
+
+$(EXECUTABLE)依赖于$(OBJS)，但makefile中没有指明$(OBJS)依赖于谁，也没指明命令生成它们；
+
+这时，make的隐含规则开始起作用；针对$(OBJS)中的每个目标，make自动调用：
+
+$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c $< -o $@ 
+
+依次生成.o文件和.d文件；
+
+$<表示依赖文件列表的第一个文件名；
+
+$@表示目标文件名；
+
+之所以会生成.d文件，是由于“-MMD”这一编译选项。为g++加上这一选项后，编译器会生成文件依赖信息，并存放至.d文件中。
+
+每一个.cpp文件相应地生成一个.d文件和一个.o文件。
+
+13.@符号
+
+命令行前的@符号表示不回显命令行；
+
+14.CFLAGS和CPPFLAGS
+
+这两者包含编译选项，更详细内容请Google之。
+
+-g 添加gdb调试信息；
+
+-Wall 提示warning信息；
+
+-O3 表示第3级优化；
