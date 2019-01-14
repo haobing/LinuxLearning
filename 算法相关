@@ -1,0 +1,139 @@
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+//交换数字
+void swap(int *x,int *y)
+{
+	int temp = *x;
+	*x = *y;
+	*y = temp;
+}
+//冒泡
+void sort(int *arry,int len)
+{
+	int i,j;
+	for(i=0;i<len;i++)
+	{
+		for(j=i+1;j<len;j++)
+		{
+			if(arry[i]>arry[j])
+			{
+				swap(&arry[i],&arry[j]);
+			}
+		}
+	}
+}
+//快速
+/*
+void quicksort(int *arry,int left, int right) {
+	int i, j, t, temp;
+	int *a=arry;
+	if(left > right)
+		return;
+    temp = a[left]; //temp中存的就是基准数
+    i = left;
+    j = right;
+    while(i < j) { //顺序很重要，要先从右边开始找
+    	while(a[j] >= temp && i < j)
+    		j--;
+    	while(a[i] <= temp && i < j)//再找右边的
+    		i++;       
+    	if(i < j)//交换两个数在数组中的位置
+    	{
+    		t = a[i];
+    		a[i] = a[j];
+    		a[j] = t;
+    	}
+    }
+    //最终将基准数归位
+    a[left] = a[i];
+    a[i] = temp;
+    quicksort(arry,left, i-1);//继续处理左边的，这里是一个递归的过程
+    quicksort(arry,i+1, right);//继续处理右边的 ，这里是一个递归的过程
+}
+*/
+void quicksort(int *arry,int left,int right)
+{
+	int i,j,tmp,t;
+	tmp = arry[left];
+	i=left;
+	j=right;
+	if(left>right)
+	{
+		return;
+	}
+	while(i<j)
+	{
+		while(arry[j]>tmp&&i<j)
+			j--;
+		while(arry[i]<=tmp&&i<j)
+			i++;
+		if(i<j)
+		{
+			//t=arry[i];
+			//arry[i]=arry[j];
+			//arry[j]=t;
+			swap(&arry[i],&arry[j]);
+		}
+	}
+	arry[left]=arry[i];
+	arry[i]=tmp;
+	quicksort(arry,left,i-1);
+	quicksort(arry,i+1,right);
+}
+//计算字符串每个字符出现频率
+void str_freq(char *str,int len)
+{
+	int num[len];
+	char substr[len];
+	
+	int i=0,j=0;
+	int key = 0,tmp=0;
+	for(i=0;i<len;i++)
+	{
+		num[i]=0;
+		substr[i]=0;
+	}
+	
+	for(i=0;i<len;i++)
+	{
+		for(j=0;j<=key;j++)
+		{
+			if(str[i] == substr[j])
+			{
+				num[j]++;
+				tmp=1;
+			}
+		}
+		if(!tmp)
+		{
+			substr[key]=str[i];
+			num[key]++;
+			key++;
+		}
+		tmp=0;
+	}
+	
+	for(i=0;i<key;i++)
+	{
+		printf("the char=%c,num=%d\n",substr[i],num[i]);
+	}
+}
+			
+		
+int main()
+{
+	int num[10]={1,5,6,3,4,2,9,7,8,3};
+	char *str="fd";
+	//sort(num,10);
+	quicksort(num,0,9);
+	int i=0;
+	for(i=0;i<10;i++)
+	{
+		printf(" %d ",num[i]);
+	}
+	printf("\n");
+	str_freq(str,strlen(str));
+}
+	
