@@ -1,0 +1,20 @@
+板子默认IP为192.168.1.15
+
+在centos系统中用mib2c工具制作私有协议模块的源码，然后将模块源码拷到带有交叉编译环境的系统中的/hao/net-snmp-5.7.3/agent/mibgroup目录中
+生成节点框架mib2c.scalar.conf
+生成table框架mib2c.iterate.conf
+生成trap框架mib2c -c mib2c.notify.conf
+交叉编译文件:CC=arm-linux-gnueabihf-gcc ./configure --build=i386-linux --host=arm-linux --enable-mini-agent --disable-ipv6 --with-endianness=little --disable-manuals --disable-ucd-snmp-compatibility --enable-as-needed --disable-embedded-perl --without-perl-modules --disable-shared --with-mib-modules="qam/iterate/qam" --with-libs="-lpthread -lxml2" --with-ldflags=-L/usr/local/lib
+将/hao/net-snmp-5.7.3/agent/中的可执行文件snmpd拷贝到开发板中，用命令：sz filename发送文件到windows系统，用命令：rz filename接收windows中的文件
+执行文件命令：./snmpd -c ./snmpd.conf ；
+snmptranslate -Tp -IR BWSC-QAM-MIB::bwsc显示节点命令
+
+将文件QAM-SYSTEMSTATUS.mib放入文件夹/usr/local/share/snmp/mibs中,建立/home/net-snmp-5.7.3/agent/mibgroup/systemStatus文件夹，用命令mib2c -c mib2c.scalar.conf QAM-SYSTEMSTATUS-MIB::systemStatus生成.c和.h文件
+注意命令sz rz的使用
+
+制作Mib表的时候注意Entry中的index
+
+更改./agent/mibgroup/Makefile中的为CPPFLAGS= $(TOP_INCLUDES) -I. $(AGENT_INCLUDES) $(MIBGROUP_INCLUDES) \
+	$(SNMPLIB_INCLUDES)  $(LIB_CFLAGS) -I/usr/include/libxml2
+	
+注意：加链接库路径在./configure	配置中，加头文件路径在./agent/mibgroup/Makefile中（大概在137行）
