@@ -137,7 +137,7 @@ int main()
 	str_freq(str,strlen(str));
 }
 	
-//-------------------------------------------------------------------------------
+//--检测是否循环链表
 struct node { char val; node* next;}
 
 bool check(const node* head) {} //return false : 无环；true: 有环
@@ -154,4 +154,19 @@ fast=fast->next->next;
 if(low==fast) return true;
 }
 return false;
+}
+//--源字符串中查找子字符串
+int serch_str(string lstr,string sstr)
+{
+	string tmp;
+	int n=sstr.size();
+	int i=0;
+	for(i=0;i<(lstr.size()-n);i++)
+	{
+		tmp.assign(lstr,i,n);
+		if(tmp == sstr)
+			return (++i);
+	}
+	if(i== lstr.size()-n)
+		return -1;
 }
