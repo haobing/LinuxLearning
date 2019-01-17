@@ -253,3 +253,32 @@ Node *reverlist(Node *head)
     head = p2;
     return head;
 }
+
+//
+typedef struct doublelinknode
+{
+    int date;
+    struct doublelinknode *prev;
+    struct doublelinknode *next;
+}Node;
+//创建双链表
+Node *create_doubel_link(int n)
+{
+    Node *head,*plast,*pnext;
+    head = (Node*)malloc(sizeof(Node));
+    assert(head!=NULL);
+    head->prev=NULL;
+    head->next = NULL;
+    int i=0;
+    for(i=0;i<n;i++)
+    {
+        plast = head;
+        pnext = (Node*)malloc(sizeof(Node));
+        pnext->data = i;
+        plast->next = pnext;
+        pnext ->prev = plast;
+        plast= plast->next;
+    }
+    pnext->next = NULL;
+    return head;
+}
