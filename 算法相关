@@ -261,7 +261,7 @@ typedef struct doublelinknode
     struct doublelinknode *prev;
     struct doublelinknode *next;
 }Node;
-//创建双链表
+//创建双链表https://blog.csdn.net/zouleideboke/article/details/76222437
 Node *create_doubel_link(int n)
 {
     Node *head,*plast,*pnext;
