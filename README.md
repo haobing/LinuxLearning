@@ -70,4 +70,4 @@ printf("字符串为%s \n",a);
     __u8    file_type;
     char    name[255];    /* File name */
 };
-
+硬链接的本质就在此，dir_entry 结构体中的 inode 值相同，那么就是硬链接
