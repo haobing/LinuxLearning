@@ -1,0 +1,99 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+typedef int bool ;
+#define false 0
+#define true 1
+
+typedef struct Node{
+	int data;
+	struct Node *next;
+}Node;
+
+//初始化栈
+Node * init_stack(Node *head)
+{
+	head = (Node *)malloc(sizeof(Node));
+	head->next = NULL;
+	return head;
+}
+
+//入栈
+bool push_stack(Node *head,int n)
+{
+	Node *cur = (Node *)malloc(sizeof(Node));
+	if(!cur) 
+		return false;
+	else
+	{
+		cur->data = n;
+		cur->next = head->next;
+		head->next = cur;
+		return true;
+	}
+}
+//出栈
+Node* pop_stack(Node *head)
+{
+	Node *p = head->next;
+	if(p)
+	{
+		head->next = p->next;
+	}
+	return p;
+}
+
+//打印
+void print_stack(Node *head)
+{
+	Node *p = head->next;
+	while(p!=NULL)
+	{
+		printf("stack elem:%d\n",p->data);
+		p = p->next;
+	}
+}
+//判空
+bool isEmpty_stack(Node *head)
+{
+	if(!head||head->next == NULL)
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+//获取栈元素个数
+int getlenth_stack(Node *head)
+{
+	Node *p = head->next;
+	int i=0;
+	while(p!=NULL)
+	{
+		i++;
+		p = p->next;
+	}
+	return i;
+}
+
+int main()
+{
+	Node *p;
+	Node *head = init_stack(p);
+	push_stack(head,1);
+	push_stack(head,2);
+	push_stack(head,3);
+	push_stack(head,4);
+	push_stack(head,5);
+	push_stack(head,6);
+	
+	print_stack(head);
+	printf("pop elem is %d\n",pop_stack(head)->data);
+	printf("pop elem is %d\n",pop_stack(head)->data);
+	
+	printf("the len=%d\n",getlenth_stack(head));
+}
