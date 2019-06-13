@@ -1,4 +1,17 @@
- 第一种形式：
+ 1． VPATH
+通过变量“VPATH”可以指定依赖文件的搜索路径，当规则的依赖文件在当前目录不存在时，make会在此变量所指定的目录下去寻找这些依赖文件。
+例： VPATH = src:../headers；如果定义了VPATH这个变量，那么，make就会在当当前目录找不到的情况下，到所指定的目录中去找寻文件了。
+
+2． vpath
+vpath不是一个变量，而是一个make的关键字，它实现了选择性地搜索。它可以为不同类型的文件（由文件名区分）指定不同的搜索目录。
+vpath <pattern> <directories>
+ 为符合模式<pattern>的文件指定搜索目录<directories>。
+--------------------- 
+作者：lcxhjg 
+来源：CSDN 
+原文：https://blog.csdn.net/lcxhjg/article/details/80938808 
+版权声明：本文为博主原创文章，转载请附上博文链接！
+第一种形式：
  
  一般我们可以使用“$(wildcard *.c)”来获取工作目录下的所有的.c文件列表
  
