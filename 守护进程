@@ -1,0 +1,132 @@
+//守护进程步骤：
+1、fork并让父进程退出，让子进程在后台运行；
+2、sedsid（）设置会话，让子进程脱离控制台；
+3、关闭文件描述符；
+4、设置掩码umask(0);
+5更改路径chdir();
+然后在while循环中查找进程是否在运行，如果没有运行就运行进程；
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
+#include <signal.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/resource.h> 
+#include<time.h>
+
+class Daemon
+{
+private:
+	char* filename;
+public:
+	Daemon(char* file)
+	{
+		filename = new char[64];
+		if(filename != NULL)
+		snprintf(filename, 64, "./%s", file);
+	}
+	~Daemon()
+	{
+		if (filename != NULL)
+		{
+			delete[] filename;
+		}
+	}
+	pid_t getPid(char* filename)
+	{
+		DIR* dp;
+		struct dirent* dir;
+		char file[512];
+		char buf[1024];
+		memset(file, 0, sizeof(file));
+		dp = opendir("/proc");
+		FILE* fp;
+		pid_t pid = -1;
+		if (dp == NULL)
+		{
+			perror("opendir error\n");
+			return -1;
+		}
+		chdir("/proc");
+		int len = 0;
+		while ((dir = readdir(dp)) != NULL)
+		{
+			if ((strcmp(dir->d_name, ".") == 0) || (strcmp(dir->d_name, "..") == 0))
+			{
+				continue;
+			}
+			if (dir->d_type != DT_DIR)
+			{
+				continue;
+			}
+			snprintf(file, sizeof(file), "/proc/%s/cmdline", dir->d_name);
+			printf("%s,%d,%s\n", __FUNCTION__, __LINE__, file);
+
+			fp = fopen(file, "r");
+			if (fp == NULL)
+			{
+				perror("fopen error");
+				continue;
+			}
+			memset(buf, 0, sizeof(buf));
+			len = fread(buf, sizeof(buf), 1, fp);
+			if (len < 0)
+			{
+				perror("fread error\n");
+				fclose(fp);
+				continue;
+			}
+			if (strncmp(buf, filename, strlen(filename)) == 0)
+			{
+				pid = (pid_t)atoi(dir->d_name);
+			}
+			fclose(fp);
+		}
+		return pid;
+	}
+	void setDaemon()
+	{
+		signal(SIGINT, SIG_IGN);
+		pid_t pid;
+		pid = fork();
+		if (pid < 0)
+		{
+			return ;
+		}
+		else if (pid > 0)
+		{
+			exit(0);
+		}
+
+		setsid();
+		for (int i = 0; i < RLIMIT_NOFILE; i++)
+		{
+			close(i);
+		}
+		chdir("/home/hao");
+		umask(0);
+		signal(SIGCHLD, SIG_IGN);
+		while (1)
+		{
+			pid = getPid(filename);
+			chdir("/home/hao");
+			if (pid < 0)
+			{
+				system(filename);
+			}
+			
+			sleep(5);
+		}
+	}
+
+};
+
+int main()
+{
+	Daemon da("test");
+	da.setDaemon();
+}
