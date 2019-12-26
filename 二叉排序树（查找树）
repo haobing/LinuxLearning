@@ -1,0 +1,164 @@
+
+#include <cstdio>
+#include<iostream>
+#include<string>
+#include<sstream>
+#include<string.h>
+
+typedef struct _SortTreeNode
+{
+	int data;
+	struct _SortTreeNode* left, *right;
+}SortTreeNode;
+
+SortTreeNode *createNode(int key)
+{
+	SortTreeNode* p = (SortTreeNode*)malloc(sizeof(SortTreeNode));
+	if (p == NULL)
+	{
+		return NULL;
+	}
+	p->data = key;
+	p->left = NULL;
+	p->right = NULL;
+	return p;
+}
+
+void scanTree(SortTreeNode *tree)
+{
+	if (tree != NULL)
+	{
+		scanTree(tree->left);
+		printf("%d\n", tree->data);
+		scanTree(tree->right);
+	}
+}
+
+//查找是否存在data==key的节点，如果存在则返回p指向此节点，否则指向其父节点，以便进行插入；
+bool searchTree(SortTreeNode* child, SortTreeNode *parent,int key, SortTreeNode** p)
+{
+	if (child == NULL)
+	{
+		*p = parent;
+		return false;
+	}
+
+	if (child->data == key)
+	{
+		*p = child;
+		return true;
+	}
+	else if (child->data > key)
+	{
+		return searchTree(child->left, child, key, p);
+	}
+	return searchTree(child->right, child, key, p);
+}
+
+//插入节点；
+bool insertNode(SortTreeNode **tree,int key)
+{
+	SortTreeNode* p = NULL;
+	if (*tree == NULL)
+	{
+		*tree = (SortTreeNode*)malloc(sizeof(SortTreeNode));
+		if (*tree == NULL)
+		{
+			return false;
+		}
+		(*tree)->data = key;
+		(*tree)->left = NULL;
+		(*tree)->right = NULL;
+	}
+	if (searchTree(*tree, NULL, key, &p))
+	{
+		return false;
+	}
+	if (p != NULL)
+	{
+		SortTreeNode* node = createNode(key);
+		if (p->data > key)
+		{
+			p->left = node;
+		}
+		else
+		{
+			p->right = node;
+		}
+	}
+	return true;
+}
+
+//删除节点
+void deleteNode(SortTreeNode* tree, int key)
+{
+	SortTreeNode* p,*q;
+	if (!searchTree(tree, NULL, key, &p))
+	{
+		return;
+	}
+
+	if (p->right == NULL && p->left != NULL)
+	{
+		q = p->left;
+		p->data = q->data;
+		p->left = q->left;
+		p->right = q->left;
+		free(q);
+	}
+	else if (p->left == NULL && p->right != NULL)
+	{
+		q = p->right;
+		p->data = q->data;
+		p->left = q->left;
+		p->right = q->right;
+		free(q);
+	}
+	else if (p->left != NULL && p->right != NULL)
+	{
+		SortTreeNode* s = NULL;
+		q = p;
+		s = q->left;
+		while (s->right)
+		{
+			q = s;
+			s = s->right;
+		}
+		p->data = s->data;
+		if (q != p)
+		{
+			q->right = s->left;
+		}
+		else
+		{
+			q->left = s->left;
+		}
+		free(s);
+	}
+	else
+	{
+		if (tree == p)
+		{
+			free(p);
+			p = NULL;
+
+		}
+	}
+}
+
+
+int main()
+{
+	SortTreeNode* p = NULL;
+	insertNode(&p, 10);
+	insertNode(&p, 15);
+	insertNode(&p, 101);
+	insertNode(&p, 50);
+	insertNode(&p, 1);
+	insertNode(&p, 80);
+	insertNode(&p, 70);
+	scanTree(p);
+	deleteNode(p, 50);
+	scanTree(p);
+
+}
