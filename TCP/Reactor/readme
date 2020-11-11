@@ -1,0 +1,2 @@
+主要是关于Reactor模式连续，Reactor模式主要理解的是事件驱动，事件驱动就需要针对不同的IO做出不同的read或者write操作；因此需要用到struct epoll_event::data::ptr这个指针；
+主要结构可以分为1、分发器，进行epoll的添加、修改和删除，还有epoll_wait的调用，或者采用select；2、Reactor调用分发器epoll类或者select类；3、eventHandle类进行具体的事物，并添加到分发器Reactor中；
