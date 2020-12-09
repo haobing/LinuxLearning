@@ -1,0 +1,179 @@
+#include<stdio.h>
+#include<string.h>
+#include<fcntl.h>
+#include <malloc.h>
+//#include"ReadDayliyScore.h"
+//#include "ReadFinalScore.h"
+
+typedef struct _BitTree
+{
+	int val;
+	struct _BitTree* left, * right;
+}BitTree;
+
+//增删查改
+
+bool searchNodef(BitTree* node, int key, BitTree *f,BitTree** p)
+{
+	if (!node)
+	{
+		*p = f;
+		return false;
+	}
+	if (node->val == key)
+	{
+		*p = node;
+		return true;
+	}
+	if (node->val > key)
+	{
+		return searchNodef(node->left, key, node, p);
+	}
+	else if (node->val < key)
+	{
+		return searchNodef(node->right, key, node, p);
+	}
+}
+
+bool insertNode(BitTree** node, int value)
+{
+	BitTree* newNode = (BitTree*)malloc(sizeof(BitTree));
+	newNode->val = value;
+	newNode->left = NULL;
+	newNode->right = NULL;
+
+	BitTree* p = NULL;
+	if (!searchNodef(*node, value, NULL, &p))
+	{
+		if (!p)
+		{
+			*node = newNode;
+			
+		}
+		else
+		{
+			if (p->val > value)
+			{
+				p->left = newNode;
+			}
+			else if (p->val < value)
+			{
+				p->right = newNode;
+			}
+			
+		}
+		return true;
+	}
+	return false;
+}
+
+//节点的删除分为三种情况：1、没有左右节点；2、只有左或者右节点；3、既有左又有右节点；
+bool deleteNode(BitTree** node)
+{
+	if (!(*node)->left && !(*node)->right)
+	{
+		free(*node);
+		*node = NULL;
+	}
+	else if (!(*node)->left)
+	{
+		BitTree* tmp = (*node)->right;
+		(*node)->val = tmp->val;
+		(*node)->left = tmp->left;
+		(*node)->right = tmp->right;
+		free(tmp);
+	}
+	else if (!(*node)->right)
+	{
+		BitTree* tmp = (*node)->left;
+		(*node)->val = tmp->val;
+		(*node)->left = tmp->left;
+		(*node)->right = tmp->right;
+	}
+	else
+	{
+		BitTree* p = (*node)->left;
+		BitTree* q = p;
+		while (p->right)
+		{
+			q = p;
+			p = p->right;
+		}
+		if (p != q)
+		{
+			(*node)->val = p->val;
+			q->right = p->left;
+			free(p);
+		}
+		else
+		{
+			(*node)->val = p->val;
+			(*node)->left = p->left;
+			free(p);
+		}
+	}
+	return true;
+}
+
+bool deleteValue(BitTree* node, int value)
+{
+	BitTree* p = NULL;
+	if (searchNodef(node, value, NULL, &p))
+	{
+		delete(&p);
+		return true;
+	}
+	return false;
+}
+
+bool deleteBST(BitTree** node, int value)
+{
+	if (!*node)
+	{
+		return false;
+	}
+	else
+	{
+		if ((*node)->val == value)
+		{
+			deleteNode(node);
+			return true;
+		}
+		else if ((*node)->val > value)
+		{
+			return deleteBST(&(*node)->left, value);
+		}
+		else if ((*node)->val < value)
+		{
+			return deleteBST(&(*node)->right, value);
+		}
+	}
+	return false;
+}
+
+void order(BitTree* node)
+{
+	if (!node)
+	{
+		return;
+	}
+	order(node->left);
+	printf("val=%d\n", node->val);
+	order(node->right);
+}
+
+int main()
+{
+	int num[5] = { 3,4,2,5,9 };
+	BitTree* root = NULL;
+	for (int i = 0; i < 5; i++)
+	{
+		insertNode(&root, num[i]);
+	}
+	printf("中序遍历二叉排序树：\n");
+	order(root);
+	printf("\n");
+	printf("删除3后，中序遍历二叉排序树：\n");
+	deleteBST(&root, 3);
+	order(root);
+}
