@@ -1,0 +1,322 @@
+AVL树：平衡排序二叉树；
+#include<stdio.h>
+#include<string.h>
+#include<fcntl.h>
+#include <malloc.h>
+//#include"ReadDayliyScore.h"
+//#include "ReadFinalScore.h"
+
+//https://www.cnblogs.com/skywang12345/p/3576969.html
+typedef struct AVLTreeNode
+{
+	int value;
+	int height;
+	struct AVLTreeNode* left, * right;
+}Node,*AVLTree;
+
+#define HEIGHT(p) ((p==NULL)?0:(p->height))
+#define max(a,b)  ((a)>(b)?(a):(b))
+
+//节点创建
+static Node* avltree_create_node(int key, Node* left, Node* right)
+{
+	Node* p;
+	if ((p = (Node*)malloc(sizeof(Node))) == NULL)
+	{
+		return NULL;
+	}
+
+	p->value = key;
+	p->height = 0;
+	p->left = left;
+	p->right = right;
+	return p;
+}
+
+
+
+int avltree_height(AVLTree tree)
+{
+	return (int)HEIGHT(tree);
+}
+//LL型的树：插入或者删除一个节点后，根节点的左子树还有左子树，导致根的左子树的高度比根的右子树的高度高2，导致不平衡；（右旋）
+
+Node* avltree_search(AVLTree tree, int value)
+{
+	if (!tree)
+	{
+		return NULL;
+	}
+
+	if (tree->value == value)
+	{
+		return tree;
+	}
+	else if (tree->value > value)
+	{
+		return avltree_search(tree->left, value);
+	}
+	else if (tree->value < value)
+	{
+		return avltree_search(tree->right, value);
+	}
+}
+
+//非递归查找
+Node* iterator_avltree_search(AVLTree root, int value)
+{
+	while (!root && (root->value != value))
+	{
+		if (root->value > value)
+		{
+			root = root->left;
+		}
+		else if (root->value < value)
+		{
+			root = root->right;
+		}
+	}
+	return root;
+}
+
+//查找最小节点：返回tree为根节点的AVL树的最小节点
+Node* avltree_mininum(AVLTree root)
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	while (root->left)
+	{
+		root = root->left;
+	}
+	return root;
+}
+
+Node* avltree_maxnum(AVLTree root)
+{
+	if (!root)
+	{
+		return NULL;
+	}
+
+	while (root->right)
+	{
+		root = root->right;
+	}
+	return root;
+}
+
+
+//LL型的树：插入或者删除一个节点后，根节点的左子树还有左子树，导致根的左子树的高度比根的右子树的高度高2，导致不平衡；（右旋）
+Node* left_left_rotation(AVLTree root)
+{
+	AVLTree ltree = root->left;
+	root->left = ltree->right;
+	ltree->right = root;
+	root->height = max(HEIGHT(root->left), HEIGHT(root->right)) + 1;
+	ltree->height =max(HEIGHT(ltree->left), root->height) + 1;
+	return ltree;
+}
+
+//RR型树：插入或者删除一个节点后，根节点的右子树还有右子树，导致右子树的高度比左子树高2，导致不平衡；（左旋）；
+
+Node* right_right_rotation(AVLTree root)
+{
+	Node* rchild = root->right;
+	root->right = rchild->left;
+	rchild->left = root;
+	root->height = max(HEIGHT(root->left), HEIGHT(root->right)) + 1;
+	rchild->height = max(HEIGHT(rchild->right), root->height) + 1;
+	return rchild;
+}
+
+//LR型树：插入或者删除一个节点后，根节点的左子树还有右子树，导致根的左子树的高度比右子树的高度高2，导致不平衡（左右旋）；
+
+Node* left_right_rotation(AVLTree root)
+{
+	root->left = right_right_rotation(root->left);
+	return left_left_rotation(root);
+}
+//RL型树：插入或者删除一个节点后，根节点的右子树还有左子树，导致根的右子树的高度比左子树高2，导致不平衡（右左旋）；
+
+Node* right_left_rotation(AVLTree root)
+{
+	root->right = left_left_rotation(root->right);
+	return right_right_rotation(root);
+}
+
+//插入节点：
+Node* avltree_insert(AVLTree root, int value)
+{
+	if (!root)
+	{
+		root = avltree_create_node(value, NULL, NULL);
+		if (root == NULL)
+		{
+			printf("create alvtree node failed\n");
+			return NULL;
+		}
+	}
+	else if (root->value > value)
+	{
+		root->left = avltree_insert(root->left, value);
+		if (HEIGHT(root->left) - HEIGHT(root->right) == 2)
+		{
+			if (root->left->value > value)
+			{
+				root = left_left_rotation(root);
+			}
+			else if (root->left->value <= value)
+			{
+				root = left_right_rotation(root);
+			}
+		}
+	}
+	else if (root->value < value)
+	{
+		root->right = avltree_insert(root->right, value);
+		if (HEIGHT(root->right) - HEIGHT(root->left) == 2)
+		{
+			if (root->right->value > value)
+			{
+				root = right_left_rotation(root);
+			}
+			else if (root->right->value <= value)
+			{
+				root = right_right_rotation(root);
+			}
+		}
+	}
+	else
+	{
+		printf("添加失败，不允许添加重复的节点\n");
+	}
+	root->height = max(HEIGHT(root->left), HEIGHT(root->right)) + 1;
+	return root;
+}
+
+
+//删除节点
+Node* delete_node(AVLTree root,Node *z)
+{
+	if (!root||!z)
+	{
+		return NULL;
+	}
+
+	if (root->value > z->value)
+	{
+		root->left = delete_node(root->left, z);
+		if (HEIGHT(root->right) - HEIGHT(root->left) == 2)
+		{
+			Node* r = root->right;
+			if (HEIGHT(r->left) > HEIGHT(r->right))
+			{
+				root = right_left_rotation(root);
+			}
+			else if (HEIGHT(r->left) < HEIGHT(r->right))
+			{
+				root = right_right_rotation(root);
+			}
+		}
+	}
+	else if (root->value < z->value)
+	{
+		root->right = delete_node(root->right, z);
+		if (HEIGHT(root->left) - HEIGHT(root->right) == 2)
+		{
+			Node* lchild = root->left;
+			if (HEIGHT(lchild->left) > HEIGHT(lchild->right))
+			{
+				root = left_left_rotation(root);
+			}
+			else if (HEIGHT(lchild->left) < HEIGHT(lchild->right))
+			{
+				root = left_right_rotation(root);
+			}
+
+		}
+	}
+	else
+	{
+		if (root->left && root->right)
+		{
+			if (HEIGHT(root->left) > HEIGHT(root->right))
+			{
+				// 如果tree的左子树比右子树高；
+				// 则(01)找出tree的左子树中的最大节点
+				//   (02)将该最大节点的值赋值给tree。
+				//   (03)删除该最大节点。
+				// 这类似于用"tree的左子树中最大节点"做"tree"的替身；
+				// 采用这种方式的好处是：删除"tree的左子树中最大节点"之后，AVL树仍然是平衡的
+				Node* maxNode = avltree_maxnum(root->left);
+				root->value = maxNode->value;
+				root->left = delete_node(root->left, maxNode);
+			}
+			else if (HEIGHT(root->left) < HEIGHT(root->right))
+			{
+				// 如果tree的左子树不比右子树高(即它们相等，或右子树比左子树高1)
+				// 则(01)找出tree的右子树中的最小节点
+				//   (02)将该最小节点的值赋值给tree。
+				//   (03)删除该最小节点。
+				// 这类似于用"tree的右子树中最小节点"做"tree"的替身；
+				// 采用这种方式的好处是：删除"tree的右子树中最小节点"之后，AVL树仍然是平衡的。
+				Node* minNode = avltree_mininum(root->right);
+				root->value = minNode->value;
+				root->right = delete_node(root->right, minNode);
+			}
+		}
+		else
+		{
+			Node* tmp = root;
+			root = root->left ? root->left : root->right;
+			free(tmp);
+		}
+	}
+	return root;
+}
+
+Node* avltree_delete(AVLTree root, int value)
+{
+	Node* fnode = avltree_search(root, value);
+	if (fnode != NULL)
+	{
+		root = delete_node(root, fnode);
+	}
+	return root;
+}
+
+void print_avltree(AVLTree root, int value, int directiron)
+{
+	if (root)
+	{
+		if (directiron == 0)
+			printf("%2d is root\n", root->value);
+		else
+			printf("%2d is %2d's %6s child\n", root->value, value, directiron == 1 ? "right" : "left");
+
+		print_avltree(root->left, root->value, -1);
+		print_avltree(root->right, root->value, 1);
+	}
+}
+
+int main()
+{
+	int arr[] = { 3,2,1,4,5,6,7,16,15,14,13,12,11,10,8,9 };
+	int len = sizeof(arr) / sizeof(arr[0]);
+	AVLTree root = NULL;
+	for (int i = 0; i < len; i++)
+	{
+		root = avltree_insert(root, arr[i]);
+	}
+	printf("前序遍历\n");
+	print_avltree(root, root->value, 0);
+
+	root = avltree_delete(root, 8);
+	printf("前序遍历\n");
+	print_avltree(root, root->value, 0);
+}
+
+
+
